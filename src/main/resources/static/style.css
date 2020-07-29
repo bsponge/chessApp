@@ -1,0 +1,15 @@
+#chessboard, #pieces {
+    position: absolute;
+}
+
+.button {
+    position: relative;
+}
+
+#pieces {
+    z-index: 1;
+}
+
+#chessboard {
+    z-index: 0;
+}

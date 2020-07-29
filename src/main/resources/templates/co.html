@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body onload="paint()">
+<canvas id="canvas">
+</canvas>
+
+<script>
+    function paint() {
+        let c = document.getElementById('canvas')
+        let ctx = c.getContext('2d')
+        let img = new Image()
+        ctx.beginPath()
+        img.src = "download.jpeg"
+        img.onload = function() {
+            ctx.drawImage(img, 10, 10, 100, 100)
+        }
+        ctx.stroke()
+    }
+</script>
+</body>
+</html>
