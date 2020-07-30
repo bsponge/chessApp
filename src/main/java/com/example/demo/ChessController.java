@@ -9,10 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpSession;
 import java.lang.constant.Constable;
 import java.util.Hashtable;
@@ -32,8 +31,19 @@ import java.util.stream.Collectors;
 
         TODO:
 
+EARLY:
         - dodanie bicia w przelocie
 
+
+MID:
+        - mozliwosc wielu gier na raz
+        - dodanie odliczania czasu
+        - dodanie cofania ruchow (pewnie trzeba zapisywac wszystkie ruchy)
+        - fix dostepu do api (zmiana adresow na sensowne)
+
+
+FUTURE:
+        - dodanie logowania i rejestrowania
 
  */
 
@@ -41,27 +51,25 @@ import java.util.stream.Collectors;
 @Slf4j
 @Controller
 @EnableScheduling
+@SessionAttributes("player")
 public class ChessController {
     private final GameSession gameSession;
     private Hashtable<Long, GameSession> gameSessions;
-    private BeanFactory beanFactory;
 
     @Autowired
-    public ChessController(GameSession gameSession, Hashtable<Long, GameSession> gameSessions, BeanFactory beanFactory) {
-        log.info("CHESS CONTROLLER CONSTRUCTOR");
+    public ChessController(GameSession gameSession, Hashtable<Long, GameSession> gameSessions) {
         this.gameSessions = gameSessions;
-        this.beanFactory = beanFactory;
         this.gameSession = gameSession;
+    }
+
+    @ModelAttribute("player")
+    public Player player() {
+        return new Player();
     }
 
     // szachownica
     @GetMapping("/home")
     public String homePage(HttpSession session) {
-        //log.info(gameSession.getPieces().toString());
-        log.info("CREATED BEAN: " + beanFactory.getBean("player").toString());
-        if (getPlayerFromSession(session) == null) {
-            session.setAttribute("player", beanFactory.getBean("player"));
-        }
         return "home";
     }
 
@@ -75,40 +83,29 @@ public class ChessController {
     // zwraca obiekt gracza
     @GetMapping("/")
     @ResponseBody
-    public Player home(HttpSession session) {
-        //log.info(gameSession.getPlayerWhite().toString());
-        //log.info(gameSession.getPlayerBlack().toString());
-        return getPlayerFromSession(session);
+    public Player home(@ModelAttribute("player") Player player) {
+        return player;
     }
 
     // szuka gierki
     @GetMapping("/findGame")
     @ResponseBody
-    public ResponseEntity<HttpStatus> findGame(HttpSession session) {
-        /*if (gameSession.getPlayerWhite().getSide() == null) {
-            gameSession.setPlayerWhite(getPlayerFromSession(session));
-            gameSession.getPlayerWhite().setSide("WHITE");
-            gameSession.getPlayerWhite().setGameSessionId(gameSession.getSessionId());
-            gameSession.setPlayersTurn(getPlayerFromSession(session).getId());
+    public synchronized ResponseEntity<HttpStatus> findGame(HttpSession session, @ModelAttribute("player") Player player) {
+        if (gameSession.getPlayerWhite() == null) {
+            gameSession.setPlayerWhiteReady(true);
+            player.setGameSessionId(gameSession.getSessionId());
+            player.setSide("WHITE");
+            gameSession.setPlayerWhite(player);
+            gameSession.setPlayersTurn(player.getId());
             return new ResponseEntity<>(HttpStatus.OK);
-        } else if (gameSession.getPlayerBlack().getSide() == null) {
-            gameSession.setPlayerBlack(getPlayerFromSession(session));
-            gameSession.getPlayerBlack().setSide("BLACK");
-            gameSession.getPlayerBlack().setGameSessionId(gameSession.getSessionId());
+        } else if (gameSession.getPlayerWhite() != null && gameSession.getPlayerBlack() == null) {
+            gameSession.setPlayerBlackReady(true);
+            gameSession.setPlayerBlack(player);
+            player.setGameSessionId(gameSession.getSessionId());
+            player.setSide("BLACK");
             return new ResponseEntity<>(HttpStatus.OK);
-        }*/
-
-        if (getPlayerFromSession(session).getSide() == null && gameSession.getPlayerWhite().getSide() == null) {
-            gameSession.setPlayerWhite(getPlayerFromSession(session));
-            gameSession.getPlayerWhite().setSide("WHITE");
-            gameSession.getPlayerWhite().setGameSessionId(gameSession.getSessionId());
-            gameSession.setPlayersTurn(getPlayerFromSession(session).getId());
-        } else if (getPlayerFromSession(session).getSide() == null && gameSession.getPlayerBlack().getSide() == null){
-            gameSession.setPlayerWhite(getPlayerFromSession(session));
-            gameSession.getPlayerWhite().setSide("BLACK");
-            gameSession.getPlayerWhite().setGameSessionId(gameSession.getSessionId());
-            gameSession.setPlayersTurn(getPlayerFromSession(session).getId());
         }
+
         return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 
@@ -116,16 +113,11 @@ public class ChessController {
     @GetMapping("/isGameReady")
     @ResponseBody
     public ResponseEntity<HttpStatus> isGameRead() {
-        if (gameSession.getPlayerWhite().getSide() == null) {
-            //log.info(gameSession.getPlayerWhite().toString());
-        }
-        if (gameSession.getPlayerBlack().getSide() == null) {
-            //log.info(gameSession.getPlayerBlack().toString());
-        }
-        if (gameSession.getPlayerWhite().getSide() != null && gameSession.getPlayerBlack().getSide() != null) {
+        //log.info(gameSession.isPlayerWhiteReady() + " " + gameSession.isPlayerWhiteReady());
+        if (gameSession.isPlayerWhiteReady() && gameSession.isPlayerBlackReady()) {
             return new ResponseEntity<>(HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
+            return new ResponseEntity<>(HttpStatus.ACCEPTED);
         }
     }
 
@@ -133,9 +125,6 @@ public class ChessController {
     @GetMapping("/game")
     @ResponseBody
     public GameSession game(HttpSession session) {
-        //log.info(getPlayerFromSession(session).toString());
-        //log.info("TURN: " + gameSession.getPlayersTurn());
-        //log.info(gameSession.isCheckMate() + "");
         return gameSession;
     }
 
@@ -147,33 +136,36 @@ public class ChessController {
                                                 @PathVariable("fromY") int y,
                                                 @PathVariable("toX") int row,
                                                 @PathVariable("toY") int column,
-                                                HttpSession session) {
+                                                HttpSession session,
+                                                @ModelAttribute("player") Player player) {
         if (!gameSession.isCheckMate()) {
-            Player player = getPlayerFromSession(session);
             Piece p = gameSession.getPiece(x, y);
             boolean canMove;
             if ((x == row && y == column)
                     && p.getColor() != null
-                    || p.getColor() != Piece.Color.valueOf(player.getSide())) {
-                //log.info("NIE TAKIE ID");
+                    || p.getColor() != Piece.Color.valueOf(player.getSide())
+                    || !p.isAlive()) {
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
             }
 
             canMove = !moveAndUndo(p, row, column);
-            log.info(String.valueOf(canMove));
 
             if (canMove && gameSession.getPiece(row, column).isAlive()) {
                 gameSession.setPieceDead(row, column);
                 p.setLocation(row, column);
+                log.info("PRZED SPRAWDZANIEM MATE I CHECK");
+                log.info(gameSession.getPiece(row, column).toString());
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
                 );
                 boolean isCheckOnWhite = isCheck(Piece.Color.WHITE);
                 boolean isCheckOnBlack = isCheck(Piece.Color.BLACK);
                 if (isCheckOnWhite && isMate(Piece.Color.WHITE)) {
+                    log.info("MATE");
                     gameSession.setCheckMate(true);
 
                 } else if (isCheckOnBlack && isMate(Piece.Color.BLACK)) {
+                    log.info("MATE");
                     gameSession.setCheckMate(true);
                 }
                 gameSession.setCheckOnBlack(isCheckOnBlack);
@@ -181,18 +173,19 @@ public class ChessController {
                 return new ResponseEntity<>(HttpStatus.OK);
             } else if (canMove) {
                 p.setLocation(row, column);
-                //log.info(gameSession.toString());
-                //log.info(gameSession.getPlayerWhite().toString());
-                //log.info(gameSession.getPlayerBlack().toString());
+                log.info("PRZED SPRAWDZANIEM MATE I CHECK");
+                log.info(gameSession.getPiece(row, column).toString());
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
                 );
                 boolean isCheckOnWhite = isCheck(Piece.Color.WHITE);
                 boolean isCheckOnBlack = isCheck(Piece.Color.BLACK);
                 if (isCheckOnWhite && isMate(Piece.Color.WHITE)) {
+                    log.info("MATE");
                     gameSession.setCheckMate(true);
 
                 } else if (isCheckOnBlack && isMate(Piece.Color.BLACK)) {
+                    log.info("MATE");
                     gameSession.setCheckMate(true);
                 }
                 gameSession.setCheckOnBlack(isCheckOnBlack);
@@ -211,25 +204,29 @@ public class ChessController {
             return false;
         }
         Piece copy = gameSession.getPiece(x, y);
+        if (copy != null && copy.getType() == Piece.Type.QUEEN) {
+            log.info("QUEEN W CANMOVEANDISNOTCHECK: " + copy);
+        }
         if (copy.getType() == Piece.Type.KING) {
             return false;
         }
         int preX = piece.getX();
         int preY = piece.getY();
-        if (copy.getType() == Piece.Type.PAWN) {
-            log.info(copy.toString());
-        }
-        gameSession.setPieceDead(x, y);
+
         boolean canMove = gameSession.move(piece, x, y);
+        gameSession.setPieceDead(x, y);
+        if (canMove) {
+            piece.setLocation(x, y);
+        }
 
         if (canMove && !isCheck(piece.getColor())) {
-            piece.setLocation(preX, preY);
+            gameSession.getPiece(x, y).setLocation(preX, preY);
             if (copy.getColor() != null) {
                 gameSession.addPiece(copy);
             }
             return true;
         } else {
-            piece.setLocation(preX, preY);
+            gameSession.getPiece(x, y).setLocation(preX, preY);
             if (copy.getColor() != null) {
                 gameSession.addPiece(copy);
             }
@@ -329,24 +326,18 @@ public class ChessController {
         Piece copy = gameSession.getPiece(x, y);
         int preX = piece.getX();
         int preY = piece.getY();
-        if (copy.getType() == Piece.Type.PAWN) {
-            log.info(copy.toString());
-        }
-        gameSession.setPieceDead(x, y);
         boolean canMove = gameSession.move(piece, x, y);
 
         if (canMove) {
+            gameSession.setPieceDead(x, y);
+            piece.setLocation(x, y);
             boolean isCheck = isCheck(piece.getColor());
-            piece.setLocation(preX, preY);
+            gameSession.getPiece(x, y).setLocation(preX, preY);
             if (copy.getColor() != null) {
                 gameSession.addPiece(copy);
             }
             return isCheck;
         } else {
-            piece.setLocation(preX, preY);
-            if (copy.getColor() != null) {
-                gameSession.addPiece(copy);
-            }
             return false;
         }
     }

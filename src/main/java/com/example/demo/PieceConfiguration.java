@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
@@ -9,6 +10,7 @@ import java.util.UUID;
 import java.util.Vector;
 
 @Configuration
+@Slf4j
 public class PieceConfiguration {
     @Bean
     public Long lon() {
@@ -17,6 +19,7 @@ public class PieceConfiguration {
 
     @Bean
     public Vector<Piece> pieces() {
+        log.info("CREATING VECTOR PIECES BEAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         Vector<Piece> list = new Vector<>();
         return list;
     }

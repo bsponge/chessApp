@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import java.util.Vector;
 
@@ -20,6 +19,8 @@ public class GameSession {
     private UUID playersTurn;
     private Player playerWhite;
     private Player playerBlack;
+    private boolean playerWhiteReady = false;
+    private boolean playerBlackReady = false;
     private UUID sessionId;
     private volatile boolean checkOnWhite = false;
     private volatile boolean checkOnBlack = false;
@@ -27,10 +28,8 @@ public class GameSession {
     private volatile int turn = 0;
 
     @Autowired
-    public GameSession(Vector<Piece> pieces, Player playerWhite, Player playerBlack) {
+    public GameSession(Vector<Piece> pieces) {
         this.pieces = pieces;
-        this.playerWhite = playerWhite;
-        this.playerBlack = playerBlack;
     }
 
     @PostConstruct
@@ -66,11 +65,9 @@ public class GameSession {
             this.pieces.get(22 + i * 8).setType(Piece.Type.KNIGHT);
             this.pieces.get(23 + i * 8).setType(Piece.Type.ROOK);
         }
-        log.info("SIZE OF PIECES: " + String.valueOf(pieces.size()));
 }
 
     public synchronized Piece getPiece(int x, int y) {
-        //log.info("FOUND: " + String.valueOf(pieces.stream().filter(e -> e.getX() == x && e.getY() == y).count()));
         return pieces
                 .stream()
                 .filter(e -> e.getX() == x && e.getY() == y)
@@ -79,17 +76,23 @@ public class GameSession {
     }
 
     public void addPiece(Piece piece) {
-        pieces.add(piece);
+        boolean b = pieces.add(piece);
+        log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        log.info("DODAWANIE :" + b);
     }
 
     public synchronized boolean move(Piece piece, int x, int y) {
+        log.info("W MOVE");
+        if (piece.getType() == Piece.Type.PAWN) {
+            log.info(pieces.toString());
+        }
         boolean canMove = true;
         int copyX;
         int copyY;
         int horizontal;
         int vertical;
         boolean descending;
-        log.info("W MOVE: " + piece.getType());
+        //log.info("W MOVE: " + piece.getType());
         if (x > -1 && x < 8 && y > -1 && y < 8) {
             switch (piece.getType()) {
                 case PAWN:
@@ -101,8 +104,16 @@ public class GameSession {
                             } else if (piece.getX() == 6
                                     && piece.getX() - x == 2
                                     && piece.getY() == y
-                                    && !this.getPiece(piece.getX()-x, y).isAlive()
-                                    && !this.getPiece(piece.getX()-x+1, y).isAlive()) {
+                                    && !this.getPiece(x + 1, y).isAlive()
+                                    && !this.getPiece(x, y).isAlive()) {
+                                if (piece.getX() == 6 && piece.getY() == 7) {
+                                    log.info("TEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
+                                }
+                                log.info("RUSZANIE PIONEM");
+                                log.info(this.getPiece(4, 7).toString());
+                                log.info(this.getPiece(x + 1, y).toString());
+                                log.info(this.getPiece(x, y).toString());
+
                             } else if (piece.getX() - x == 1
                                     && Math.abs(piece.getY() - y) == 1
                                     && this.getPiece(x, y).getColor() == Piece.Color.BLACK) {
@@ -285,15 +296,14 @@ public class GameSession {
             canMove = false;
         }
 
-        if (canMove) {
-            piece.setLocation(x, y);
-        }
 
         return canMove;
     }
 
     public synchronized void setPieceDead(int x, int y) {
-        boolean p = this.pieces.removeIf(e -> e.getX() == x && e.getY() == y);
+            //log.info("DELETING QUEEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            //log.info(pieces.stream().filter(e -> e.getX() == x && e.getY() == y).findAny().get() + " ");
+        this.pieces.removeIf(e -> e.getX() == x && e.getY() == y);
         //log.info("REMOVING PIECE :" + p);
    }
 }
