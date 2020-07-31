@@ -35,7 +35,6 @@ MID:
         - mozliwosc wielu gier na raz
         - dodanie odliczania czasu
         - dodanie cofania ruchow (pewnie trzeba zapisywac wszystkie ruchy)
-        - fix dostepu do api (zmiana adresow na sensowne)
 
 
 FUTURE:

@@ -52,7 +52,6 @@ public class GameSession {
             this.pieces.get(24 + i).setLocation(0, i);
             this.pieces.get(24 + i).setColor(Piece.Color.BLACK);
         }
-        log.info(String.valueOf(this.pieces.stream().filter(e -> e.getType() == Piece.Type.PAWN && e.getColor() == Piece.Color.WHITE).count()));
 
         for (int i = 0; i < 2; ++i) {
             this.pieces.get(16 + i * 8).setType(Piece.Type.ROOK);
@@ -76,14 +75,9 @@ public class GameSession {
 
     public synchronized void addPiece(Piece piece) {
         boolean b = pieces.add(piece);
-        log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        log.info("DODAWANIE :" + b);
     }
 
     public synchronized boolean move(Piece piece, int x, int y) {
-        if (piece.getType() == Piece.Type.PAWN) {
-            log.info(pieces.toString());
-        }
         boolean canMove = true;
         int copyX;
         int copyY;
@@ -251,7 +245,6 @@ public class GameSession {
                     break;
                 case KING:
                     if (Math.abs(piece.getX() - x) < 2 && Math.abs(piece.getY() - y) < 2) {
-                        log.info("MOVING KING: " + (this.getPiece(x, y).getColor() == piece.getColor()) + " " + this.getPiece(x, y).getColor());
                         if (this.getPiece(x, y).getColor() == piece.getColor()) {
                             canMove = false;
                         }

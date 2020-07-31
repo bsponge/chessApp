@@ -5,7 +5,6 @@ let images = new Map()
 let domain = "http://localhost:8080/"
 let playerInfoUrl = domain + "api/player"
 let gameUrl = domain + "api/game"
-let turnUrl = domain + "api/turn"
 let findGameUrl = domain + "api/findGame"
 let isGameReadyUrl = domain + "api/isGameReady"
 let moveUrl = domain + "api/move/"
@@ -22,10 +21,9 @@ QUEENBLACK.png
 QUEENWHITE.png
 ROOKBLACK.png
 ROOKWHITE.png`.split("\n")
-let playerId = -1
-let turn = -1
 let positions = []
 let ctx = document.getElementById('pieces').getContext('2d')
+let timeElement = document.getElementById("panel")
 ctx.canvas.width = size * 8
 ctx.canvas.height = size * 8
 
@@ -36,13 +34,28 @@ const anotherId = setInterval(isGameReady, 300)
 let playerInfo = new Object()
 let gameSession = new Object()
 let side = "WHITE"
+let time = 600_000
+let refreshInterval = 10
+
 
 let chessboard = setInterval(drawChessboard, 300)
 
 let infoId = setInterval(getGameSession, 300)
 
 setInterval(drawPieces, 100)
+setInterval(timeDisplay, refreshInterval)
 
+
+function timeDisplay() {
+    if (typeof playerInfo != "undefined" && typeof gameSession != "undefined") {
+        if (playerInfo.id == gameSession.playersTurn) {
+            time -= refreshInterval
+            timeElement.innerText = "YOUR TURN   TIME: " + Math.floor((time / 1000) / 60) + ":" + Math.floor(((time / 1000) % 60))
+        } else {
+            timeElement.innerText = "TIME: " + Math.floor((time / 1000) / 60) + ":" + Math.floor(((time / 1000) % 60))
+        }
+    }
+}
 
 function findGame() {
     fetch(findGameUrl)
@@ -79,8 +92,6 @@ function drawChessboard() {
     const light = "#EFE9CF"
     const dark = "#E8C15F"
     let bool = true
-    //console.log("ASDBV")
-
     let player = fetch(playerInfoUrl)
 
     player.then(function(response) {
@@ -110,7 +121,6 @@ function drawChessboard() {
     }
 
     if (playerInfo.side != null) {
-        //console.log("KONIEC")
         clearInterval(chessboard)
     }
 }
@@ -155,9 +165,7 @@ function preloadAllImages(callback) {
                     res.push(response.status)
                     if (response.status == 200) {
                         drawPieces(true)
-                        //console.log("GOOD MOVE")
                     } else if (response.data == "MATE") {
-                        //console.log("MATE")
                         document.body.style.backgroundColor = "red"
                     }
                 })
@@ -171,7 +179,6 @@ function preloadAllImages(callback) {
                     res.push(response.status)
                     if (response.status == 200) {
                         drawPieces(true)
-                        //console.log("GOOD MOVE")
                     }
                 })
         }
@@ -215,7 +222,6 @@ function drawPieces() {
         gameSession = data
     })
     if (typeof gameSession.pieces != "undefined" && playerInfo.side != null) {
-        //console.log(gameSession.pieces)
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
         console.log(gameSession.checkMate)
         if (playerInfo.side == "WHITE" && gameSession.checkOnWhite == true) {

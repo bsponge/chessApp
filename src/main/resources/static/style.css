@@ -1,5 +1,13 @@
 #chessboard, #pieces {
     position: absolute;
+    top: 50%;
+    left: 30%;
+
+    transform: translate(-50%, -50%);
+}
+
+#panel {
+    align: right;
 }
 
 .topnav {
@@ -26,8 +34,8 @@
     color: white;
 }
 
-.button {
-    position: relative;
+.drawing {
+    align: right;
 }
 
 #pieces {

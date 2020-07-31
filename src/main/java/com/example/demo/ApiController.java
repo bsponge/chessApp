@@ -32,11 +32,6 @@ public class ApiController {
         this.gameSessions = gameSessions;
     }
 
-    @GetMapping("/turn")
-    @ResponseBody
-    public UUID playersTurn() {
-        return gameSession.getPlayersTurn();
-    }
 
     // zwraca obiekt gracza
     @GetMapping("/player")
@@ -102,7 +97,8 @@ public class ApiController {
                     || p.getColor() != Piece.Color.valueOf(player.getSide())
                     || !p.isAlive()
                     || gameSession.getPlayerBlack() == null
-                    || gameSession.getPlayerWhite() == null) {
+                    || gameSession.getPlayerWhite() == null
+                    || !gameSession.getPlayersTurn().equals(player.getId())) {
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
             }
 
@@ -111,43 +107,45 @@ public class ApiController {
             if (canMove && gameSession.getPiece(row, column).isAlive()) {
                 gameSession.setPieceDead(row, column);
                 p.setLocation(row, column);
-                log.info("PRZED SPRAWDZANIEM MATE I CHECK");
-                log.info(gameSession.getPiece(row, column).toString());
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
                 );
                 boolean isCheckOnWhite = isCheck(Piece.Color.WHITE);
                 boolean isCheckOnBlack = isCheck(Piece.Color.BLACK);
                 if (isCheckOnWhite && isMate(Piece.Color.WHITE)) {
-                    log.info("MATE");
                     gameSession.setCheckMate(true);
 
                 } else if (isCheckOnBlack && isMate(Piece.Color.BLACK)) {
-                    log.info("MATE");
                     gameSession.setCheckMate(true);
                 }
                 gameSession.setCheckOnBlack(isCheckOnBlack);
                 gameSession.setCheckOnWhite(isCheckOnWhite);
+                if (Piece.Color.valueOf(player.getSide()) == Piece.Color.WHITE) {
+                    gameSession.setPlayersTurn(gameSession.getPlayerBlack().getId());
+                } else {
+                    gameSession.setPlayersTurn(gameSession.getPlayerWhite().getId());
+                }
                 return new ResponseEntity<>(HttpStatus.OK);
             } else if (canMove) {
                 p.setLocation(row, column);
-                log.info("PRZED SPRAWDZANIEM MATE I CHECK");
-                log.info(gameSession.getPiece(row, column).toString());
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
                 );
                 boolean isCheckOnWhite = isCheck(Piece.Color.WHITE);
                 boolean isCheckOnBlack = isCheck(Piece.Color.BLACK);
                 if (isCheckOnWhite && isMate(Piece.Color.WHITE)) {
-                    log.info("MATE");
                     gameSession.setCheckMate(true);
 
                 } else if (isCheckOnBlack && isMate(Piece.Color.BLACK)) {
-                    log.info("MATE");
                     gameSession.setCheckMate(true);
                 }
                 gameSession.setCheckOnBlack(isCheckOnBlack);
                 gameSession.setCheckOnWhite(isCheckOnWhite);
+                if (Piece.Color.valueOf(player.getSide()) == Piece.Color.WHITE) {
+                    gameSession.setPlayersTurn(gameSession.getPlayerBlack().getId());
+                } else {
+                    gameSession.setPlayersTurn(gameSession.getPlayerWhite().getId());
+                }
                 return new ResponseEntity<>(HttpStatus.OK);
             } else {
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
@@ -162,9 +160,6 @@ public class ApiController {
             return false;
         }
         Piece copy = gameSession.getPiece(x, y);
-        if (copy != null && copy.getType() == Piece.Type.QUEEN) {
-            log.info("QUEEN W CANMOVEANDISNOTCHECK: " + copy);
-        }
         if (copy.getType() == Piece.Type.KING) {
             return false;
         }
@@ -296,7 +291,7 @@ public class ApiController {
             }
             return isCheck;
         } else {
-            return false;
+            return true;
         }
     }
 
