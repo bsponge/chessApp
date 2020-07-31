@@ -19,7 +19,6 @@ public class PieceConfiguration {
 
     @Bean
     public Vector<Piece> pieces() {
-        log.info("CREATING VECTOR PIECES BEAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         Vector<Piece> list = new Vector<>();
         return list;
     }

@@ -25,7 +25,6 @@ public class GameSession {
     private volatile boolean checkOnWhite = false;
     private volatile boolean checkOnBlack = false;
     private volatile boolean checkMate = false;
-    private volatile int turn = 0;
 
     @Autowired
     public GameSession(Vector<Piece> pieces) {
@@ -75,14 +74,13 @@ public class GameSession {
                 .orElse(new Piece());
     }
 
-    public void addPiece(Piece piece) {
+    public synchronized void addPiece(Piece piece) {
         boolean b = pieces.add(piece);
         log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         log.info("DODAWANIE :" + b);
     }
 
     public synchronized boolean move(Piece piece, int x, int y) {
-        log.info("W MOVE");
         if (piece.getType() == Piece.Type.PAWN) {
             log.info(pieces.toString());
         }
@@ -92,7 +90,6 @@ public class GameSession {
         int horizontal;
         int vertical;
         boolean descending;
-        //log.info("W MOVE: " + piece.getType());
         if (x > -1 && x < 8 && y > -1 && y < 8) {
             switch (piece.getType()) {
                 case PAWN:
@@ -106,14 +103,6 @@ public class GameSession {
                                     && piece.getY() == y
                                     && !this.getPiece(x + 1, y).isAlive()
                                     && !this.getPiece(x, y).isAlive()) {
-                                if (piece.getX() == 6 && piece.getY() == 7) {
-                                    log.info("TEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
-                                }
-                                log.info("RUSZANIE PIONEM");
-                                log.info(this.getPiece(4, 7).toString());
-                                log.info(this.getPiece(x + 1, y).toString());
-                                log.info(this.getPiece(x, y).toString());
-
                             } else if (piece.getX() - x == 1
                                     && Math.abs(piece.getY() - y) == 1
                                     && this.getPiece(x, y).getColor() == Piece.Color.BLACK) {
@@ -143,22 +132,18 @@ public class GameSession {
                     if (piece.getX() == x) {
                         descending = piece.getY() - y > 0;
                         copyY = piece.getY();
-                        log.info("ROOK MOVING1");
                         while (canMove && copyY != y) {
                             if (descending) {
                                 if (piece.getColor() == this.getPiece(x, --copyY).getColor()) {
-                                    log.info("CANNOT MOVE ROOK1");
                                     canMove = false;
                                 }
                             } else if (piece.getColor() == this.getPiece(x, ++copyY).getColor()){
-                                log.info("CANNOT MOVE ROOK2");
                                 canMove = false;
                             }
                         }
                     } else if (piece.getY() == y) {
                         descending = piece.getX() - x > 0;
                         copyX = piece.getX();
-                        log.info("ROOK MOVING2");
                         while (canMove && copyX != x) {
                             if (descending) {
                                 if (piece.getColor() == this.getPiece(--copyX, y).getColor()) {
@@ -177,31 +162,22 @@ public class GameSession {
                     vertical = piece.getX() - x > 0 ? 3 : 1;
                     copyX = piece.getX();
                     copyY = piece.getY();
-                    //log.info("BEFORE TEST");
-                    //log.info(horizontal + " " + vertical);
                     if (Math.abs(piece.getY() - y) == Math.abs(piece.getX() - x)) {
-                        //log.info("PASSED");
                         while (canMove && copyX > -1 && copyX < 8 && copyY > -1 && copyY < 8) {
-                            //log.info("W WHILE");
                             if (vertical == 1 && horizontal == 2) {
                                 if (this.getPiece(++copyX, ++copyY).getColor() == piece.getColor()) {
-                                    //log.info(this.getPiece(copyX, copyY).toString());
-                                    //log.info("1 i 2");
                                     canMove = false;
                                 }
                             } else if (vertical == 3 && horizontal == 4) {
                                 if (this.getPiece(--copyX, ++copyY).getColor() == piece.getColor()) {
-                                    //log.info("CO");
                                     canMove = false;
                                 }
                             } else if (vertical == 3) {
-                                //log.info("NIE");
                                 if (this.getPiece(--copyX, --copyY).getColor() == piece.getColor()) {
                                     canMove = false;
                                 }
                             } else {
                                 if (this.getPiece(++copyX, --copyY).getColor() == piece.getColor()) {
-                                    //log.info("TUTUT");
                                     canMove = false;
                                 }
                             }
@@ -225,31 +201,22 @@ public class GameSession {
                     vertical = piece.getX() - x > 0 ? 3 : 1;
                     copyX = piece.getX();
                     copyY = piece.getY();
-                    //log.info("BEFORE TEST");
-                    //log.info(horizontal + " " + vertical);
                     if (Math.abs(piece.getY() - y) == Math.abs(piece.getX() - x)) {
-                        //log.info("PASSED");
                         while (canMove && copyX > -1 && copyX < 8 && copyY > -1 && copyY < 8) {
-                            //log.info("W WHILE");
                             if (vertical == 1 && horizontal == 2) {
                                 if (this.getPiece(++copyX, ++copyY).getColor() == piece.getColor()) {
-                                    //log.info(this.getPiece(copyX, copyY).toString());
-                                    //log.info("1 i 2");
                                     canMove = false;
                                 }
                             } else if (vertical == 3 && horizontal == 4) {
                                 if (this.getPiece(--copyX, ++copyY).getColor() == piece.getColor()) {
-                                    //log.info("CO");
                                     canMove = false;
                                 }
                             } else if (vertical == 3) {
-                                //log.info("NIE");
                                 if (this.getPiece(--copyX, --copyY).getColor() == piece.getColor()) {
                                     canMove = false;
                                 }
                             } else {
                                 if (this.getPiece(++copyX, --copyY).getColor() == piece.getColor()) {
-                                    //log.info("TUTUT");
                                     canMove = false;
                                 }
                             }
@@ -301,9 +268,6 @@ public class GameSession {
     }
 
     public synchronized void setPieceDead(int x, int y) {
-            //log.info("DELETING QUEEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            //log.info(pieces.stream().filter(e -> e.getX() == x && e.getY() == y).findAny().get() + " ");
         this.pieces.removeIf(e -> e.getX() == x && e.getY() == y);
-        //log.info("REMOVING PIECE :" + p);
    }
 }

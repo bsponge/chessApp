@@ -1,6 +1,15 @@
 
 let size = 80
 let images = new Map()
+
+let domain = "http://localhost:8080/"
+let playerInfoUrl = domain + "api/player"
+let gameUrl = domain + "api/game"
+let turnUrl = domain + "api/turn"
+let findGameUrl = domain + "api/findGame"
+let isGameReadyUrl = domain + "api/isGameReady"
+let moveUrl = domain + "api/move/"
+
 let list = `BISHOPBLACK.png
 BISHOPWHITE.png
 KINGBLACK.png
@@ -36,7 +45,7 @@ setInterval(drawPieces, 100)
 
 
 function findGame() {
-    fetch("http://localhost:8080/findGame")
+    fetch(findGameUrl)
         .then(function (response) {
             if (response.status === 200) {
                 console.log("GAME FOUND")
@@ -46,7 +55,7 @@ function findGame() {
 }
 
 function isGameReady() {
-    fetch("http://localhost:8080/isGameReady")
+    fetch(isGameReadyUrl)
         .then(function(response) {
             console.log("IS GAME READY")
             if (response.status === 200) {
@@ -72,7 +81,7 @@ function drawChessboard() {
     let bool = true
     //console.log("ASDBV")
 
-    let player = fetch("http://localhost:8080/")
+    let player = fetch(playerInfoUrl)
 
     player.then(function(response) {
         return response.json()
@@ -124,7 +133,7 @@ function preloadAllImages(callback) {
             positions.pop()
             positions.pop()
         }
-        let player = fetch("http://localhost:8080/")
+        let player = fetch(playerInfoUrl)
 
         player.then(function(response) {
             return response.json()
@@ -137,7 +146,7 @@ function preloadAllImages(callback) {
         res.pop()
 
         if (typeof playerInfo.side !== "undefined" && playerInfo.side == "WHITE" && positions.length == 2) {
-            fetch("http://localhost:8080/move/"
+            fetch(moveUrl
                 + positions[0][0] + "/"
                 + positions[0][1] + "/"
                 + positions[1][0] + "/"
@@ -153,7 +162,7 @@ function preloadAllImages(callback) {
                     }
                 })
         } else if (typeof playerInfo.side !== "undefined" && playerInfo.side == "BLACK" && positions.length == 2) {
-            fetch("http://localhost:8080/move/"
+            fetch(moveUrl
                 + ( 7 - positions[0][0]) + "/"
                 + (positions[0][1]) + "/"
                 + ( 7 - positions[1][0]) + "/"
@@ -170,8 +179,8 @@ function preloadAllImages(callback) {
 }
 
 function getGameSession() {
-    let game = fetch('http://localhost:8080/game')
-    let player = fetch('http://localhost:8080/')
+    let game = fetch(gameUrl)
+    let player = fetch(playerInfoUrl)
     let promises = [game, player]
     game.then(function(response) {
         return response.json()
@@ -193,13 +202,13 @@ function getGameSession() {
 
 function drawPieces() {
     let ctx = document.getElementById('pieces').getContext('2d')
-    fetch("http://localhost:8080/")
+    fetch(playerInfoUrl)
         .then(function(response) {
             return response.json()
         }).then(function(data) {
         playerInfo = data
     })
-    fetch("http://localhost:8080/game")
+    fetch(gameUrl)
         .then(function(response) {
             return response.json()
         }).then(function(data) {

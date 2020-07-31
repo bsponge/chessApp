@@ -1,79 +1,37 @@
 package com.example.demo;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpSession;
 import java.lang.constant.Constable;
 import java.util.Hashtable;
 import java.util.UUID;
 import java.util.stream.Collectors;
-/*
-
-                                x  ________________
-                                |   |
-                                |   |
-                                V   |
-                                    |______________
-                                    y ->
-
-                             */
-/*
-
-        TODO:
-
-EARLY:
-        - dodanie bicia w przelocie
-
-
-MID:
-        - mozliwosc wielu gier na raz
-        - dodanie odliczania czasu
-        - dodanie cofania ruchow (pewnie trzeba zapisywac wszystkie ruchy)
-        - fix dostepu do api (zmiana adresow na sensowne)
-
-
-FUTURE:
-        - dodanie logowania i rejestrowania
-
- */
-
 
 @Slf4j
 @Controller
-@EnableScheduling
+@RequestMapping("/api")
 @SessionAttributes("player")
-public class ChessController {
-    private final GameSession gameSession;
+public class ApiController {
+    private GameSession gameSession;
     private Hashtable<Long, GameSession> gameSessions;
-
-    @Autowired
-    public ChessController(GameSession gameSession, Hashtable<Long, GameSession> gameSessions) {
-        this.gameSessions = gameSessions;
-        this.gameSession = gameSession;
-    }
 
     @ModelAttribute("player")
     public Player player() {
         return new Player();
     }
 
-    // szachownica
-    @GetMapping("/home")
-    public String homePage(HttpSession session) {
-        return "home";
+    @Autowired
+    public ApiController(GameSession gameSession, Hashtable<Long, GameSession> gameSessions) {
+        this.gameSession = gameSession;
+        this.gameSessions = gameSessions;
     }
 
-    // zwraca obiekt z id gracza ktory ma teraz ture
     @GetMapping("/turn")
     @ResponseBody
     public UUID playersTurn() {
@@ -81,7 +39,7 @@ public class ChessController {
     }
 
     // zwraca obiekt gracza
-    @GetMapping("/")
+    @GetMapping("/player")
     @ResponseBody
     public Player home(@ModelAttribute("player") Player player) {
         return player;
@@ -90,7 +48,7 @@ public class ChessController {
     // szuka gierki
     @GetMapping("/findGame")
     @ResponseBody
-    public synchronized ResponseEntity<HttpStatus> findGame(HttpSession session, @ModelAttribute("player") Player player) {
+    public synchronized ResponseEntity<HttpStatus> findGame(@ModelAttribute("player") Player player) {
         if (gameSession.getPlayerWhite() == null) {
             gameSession.setPlayerWhiteReady(true);
             player.setGameSessionId(gameSession.getSessionId());
@@ -112,8 +70,7 @@ public class ChessController {
     // sprawdza czy gra jest gotowa
     @GetMapping("/isGameReady")
     @ResponseBody
-    public ResponseEntity<HttpStatus> isGameRead() {
-        //log.info(gameSession.isPlayerWhiteReady() + " " + gameSession.isPlayerWhiteReady());
+    public ResponseEntity<HttpStatus> isGameReady() { ;
         if (gameSession.isPlayerWhiteReady() && gameSession.isPlayerBlackReady()) {
             return new ResponseEntity<>(HttpStatus.OK);
         } else {
@@ -124,7 +81,7 @@ public class ChessController {
     // zwraca GameSession
     @GetMapping("/game")
     @ResponseBody
-    public GameSession game(HttpSession session) {
+    public GameSession game() {
         return gameSession;
     }
 
@@ -133,18 +90,19 @@ public class ChessController {
     @GetMapping("move/{fromX}/{fromY}/{toX}/{toY}")
     @ResponseBody
     public synchronized HttpEntity<? extends Constable> movePiece(@PathVariable("fromX") int x,
-                                                @PathVariable("fromY") int y,
-                                                @PathVariable("toX") int row,
-                                                @PathVariable("toY") int column,
-                                                HttpSession session,
-                                                @ModelAttribute("player") Player player) {
+                                                                  @PathVariable("fromY") int y,
+                                                                  @PathVariable("toX") int row,
+                                                                  @PathVariable("toY") int column,
+                                                                  @ModelAttribute("player") Player player) {
         if (!gameSession.isCheckMate()) {
             Piece p = gameSession.getPiece(x, y);
             boolean canMove;
             if ((x == row && y == column)
                     && p.getColor() != null
                     || p.getColor() != Piece.Color.valueOf(player.getSide())
-                    || !p.isAlive()) {
+                    || !p.isAlive()
+                    || gameSession.getPlayerBlack() == null
+                    || gameSession.getPlayerWhite() == null) {
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
             }
 
@@ -443,49 +401,49 @@ public class ChessController {
 
         if (king.getX() - 2 > -1 && king.getY() - 1 > -1) {
             if (gameSession.getPiece(king.getX() - 2, king.getY() - 1).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() - 2, king.getY() - 1).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() - 2, king.getY() - 1).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() - 2 > -1 && king.getY() + 1 < 8) {
             if (gameSession.getPiece(king.getX() - 2, king.getY() + 1).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() - 2, king.getY() + 1).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() - 2, king.getY() + 1).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() + 2 < 8 && king.getY() - 1 > -1) {
             if (gameSession.getPiece(king.getX() + 2, king.getY() - 1).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() + 2, king.getY() - 1).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() + 2, king.getY() - 1).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() + 2 < 8 && king.getY() + 1 < 8) {
             if (gameSession.getPiece(king.getX() + 2, king.getY() + 1).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() + 2, king.getY() + 1).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() + 2, king.getY() + 1).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() - 1 > -1 && king.getY() - 2 > -1) {
             if (gameSession.getPiece(king.getX() - 1, king.getY() - 2).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() - 1, king.getY() - 2).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() - 1, king.getY() - 2).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() - 1 > -1 && king.getY() + 2 < 8) {
             if (gameSession.getPiece(king.getX() - 1, king.getY() + 2).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() - 1, king.getY() + 2).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() - 1, king.getY() + 2).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() + 1 < 8 && king.getY() + 2 < 8) {
             if (gameSession.getPiece(king.getX() + 1, king.getY() + 2).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() + 1, king.getY() + 2).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() + 1, king.getY() + 2).getColor() != king.getColor()) {
                 return true;
             }
         }
         if (king.getX() + 1 < 8 && king.getY() - 2 > -1) {
             if (gameSession.getPiece(king.getX() + 1, king.getY() - 2).getType() == Piece.Type.KNIGHT
-                && gameSession.getPiece(king.getX() + 1, king.getY() - 2).getColor() != king.getColor()) {
+                    && gameSession.getPiece(king.getX() + 1, king.getY() - 2).getColor() != king.getColor()) {
                 return true;
             }
         }
@@ -512,13 +470,4 @@ public class ChessController {
         }
         return false;
     }
-
-    // zwraca obiekt gracza danej sesji http
-    private Player getPlayerFromSession(HttpSession session) {
-        if (session.getAttribute("player") == null) {
-            session.setAttribute("player", new Player());
-        }
-        return (Player) session.getAttribute("player");
-    }
-
 }
