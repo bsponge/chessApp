@@ -1,16 +1,16 @@
 package com.example.demo;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.support.GenericWebApplicationContext;
 
 import java.lang.constant.Constable;
-import java.util.Hashtable;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -18,8 +18,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 @SessionAttributes("player")
 public class ApiController {
-    private GameSession gameSession;
-    private Hashtable<Long, GameSession> gameSessions;
+    private ExtendedHashMap gameSessions;
+    private GenericWebApplicationContext context;
+
+    private static final ResponseEntity<HttpStatus> OK_STATUS = new ResponseEntity<>(HttpStatus.OK);
+    private static final ResponseEntity<HttpStatus> ACCEPTED_STATUS = new ResponseEntity<>(HttpStatus.ACCEPTED);
 
     @ModelAttribute("player")
     public Player player() {
@@ -27,59 +30,69 @@ public class ApiController {
     }
 
     @Autowired
-    public ApiController(GameSession gameSession, Hashtable<Long, GameSession> gameSessions) {
-        this.gameSession = gameSession;
+    public ApiController(ExtendedHashMap gameSessions, GenericWebApplicationContext context) {
         this.gameSessions = gameSessions;
+        this.context = context;
+        log.info("APICONTROLLER CREATED");
     }
 
 
     // zwraca obiekt gracza
     @GetMapping("/player")
     @ResponseBody
-    public Player home(@ModelAttribute("player") Player player) {
+    public Player getPlayer(@ModelAttribute("player") Player player) {
         return player;
     }
 
-    // szuka gierki
     @GetMapping("/findGame")
     @ResponseBody
     public synchronized ResponseEntity<HttpStatus> findGame(@ModelAttribute("player") Player player) {
-        if (gameSession.getPlayerWhite() == null) {
-            gameSession.setPlayerWhiteReady(true);
-            player.setGameSessionId(gameSession.getSessionId());
-            player.setSide("WHITE");
-            gameSession.setPlayerWhite(player);
-            gameSession.setPlayersTurn(player.getId());
-            return new ResponseEntity<>(HttpStatus.OK);
-        } else if (gameSession.getPlayerWhite() != null && gameSession.getPlayerBlack() == null) {
-            gameSession.setPlayerBlackReady(true);
-            gameSession.setPlayerBlack(player);
-            player.setGameSessionId(gameSession.getSessionId());
-            player.setSide("BLACK");
-            return new ResponseEntity<>(HttpStatus.OK);
+        GameSession gameSession = gameSessions.getGame();
+        log.info("IN FIND GAME: " + player.toString());
+        if (gameSession != null) {
+            if (gameSession.getPlayerWhite() == null) {
+                gameSession.setPlayerWhite(player);
+                gameSession.setPlayersTurn(player.getId());
+                player.setSide("WHITE");
+                player.setGameSessionId(gameSession.getSessionId());
+            } else if (gameSession.getPlayerBlack() == null) {
+                gameSession.setPlayerBlack(player);
+                player.setSide("BLACK");
+                player.setGameSessionId(gameSession.getSessionId());
+            }
+            return OK_STATUS;
+        } else {
+            return ACCEPTED_STATUS;
         }
-
-        return new ResponseEntity<>(HttpStatus.ACCEPTED);
     }
 
-    // sprawdza czy gra jest gotowa
     @GetMapping("/isGameReady")
     @ResponseBody
-    public ResponseEntity<HttpStatus> isGameReady() { ;
-        if (gameSession.isPlayerWhiteReady() && gameSession.isPlayerBlackReady()) {
-            return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<HttpStatus> isGameReady(@ModelAttribute("player") Player player) {
+        log.info("IN IS GAME READY: " + player.toString());
+        if (player.getGameSessionId() == null || !gameSessions.containsKey(player.getGameSessionId())) {
+            return ACCEPTED_STATUS;
+        }
+        GameSession gameSession = gameSessions.get(player.getGameSessionId());
+        if (gameSession != null) {
+            if (gameSession.getPlayerBlack() != null && gameSession.getPlayerWhite() != null) {
+                return OK_STATUS;
+            } else {
+                return ACCEPTED_STATUS;
+            }
         } else {
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return ACCEPTED_STATUS;
         }
     }
 
-    // zwraca GameSession
     @GetMapping("/game")
     @ResponseBody
-    public GameSession game() {
-        return gameSession;
+    public GameSession game(@ModelAttribute("player") Player player) {
+        if (player.getGameSessionId() == null || !gameSessions.containsKey(player.getGameSessionId())) {
+            return new GameSession(true);
+        }
+        return gameSessions.get(player.getGameSessionId());
     }
-
 
     // ruszanie figur
     @GetMapping("move/{fromX}/{fromY}/{toX}/{toY}")
@@ -89,6 +102,7 @@ public class ApiController {
                                                                   @PathVariable("toX") int row,
                                                                   @PathVariable("toY") int column,
                                                                   @ModelAttribute("player") Player player) {
+        GameSession gameSession = gameSessions.get(player.getGameSessionId());
         if (!gameSession.isCheckMate()) {
             Piece p = gameSession.getPiece(x, y);
             boolean canMove;
@@ -101,21 +115,28 @@ public class ApiController {
                     || !gameSession.getPlayersTurn().equals(player.getId())) {
                 return new ResponseEntity<>(HttpStatus.ACCEPTED);
             }
+            log.info("W MOVE");
 
-            canMove = !moveAndUndo(p, row, column);
+
+            canMove = moveAndUndo(player, p, row, column);
+
+
+            //log.info("" + canMove);
+            //log.info(gameSession.getPiece(row, column).toString());
 
             if (canMove && gameSession.getPiece(row, column).isAlive()) {
+                log.info("TU?");
                 gameSession.setPieceDead(row, column);
                 p.setLocation(row, column);
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
                 );
-                boolean isCheckOnWhite = isCheck(Piece.Color.WHITE);
-                boolean isCheckOnBlack = isCheck(Piece.Color.BLACK);
-                if (isCheckOnWhite && isMate(Piece.Color.WHITE)) {
+                boolean isCheckOnWhite = isCheck(player, Piece.Color.WHITE);
+                boolean isCheckOnBlack = isCheck(player, Piece.Color.BLACK);
+                if (isCheckOnWhite && isMate(player, Piece.Color.WHITE)) {
                     gameSession.setCheckMate(true);
 
-                } else if (isCheckOnBlack && isMate(Piece.Color.BLACK)) {
+                } else if (isCheckOnBlack && isMate(player, Piece.Color.BLACK)) {
                     gameSession.setCheckMate(true);
                 }
                 gameSession.setCheckOnBlack(isCheckOnBlack);
@@ -127,16 +148,17 @@ public class ApiController {
                 }
                 return new ResponseEntity<>(HttpStatus.OK);
             } else if (canMove) {
+                log.info("TU W MOVE");
                 p.setLocation(row, column);
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
                 );
-                boolean isCheckOnWhite = isCheck(Piece.Color.WHITE);
-                boolean isCheckOnBlack = isCheck(Piece.Color.BLACK);
-                if (isCheckOnWhite && isMate(Piece.Color.WHITE)) {
+                boolean isCheckOnWhite = isCheck(player, Piece.Color.WHITE);
+                boolean isCheckOnBlack = isCheck(player, Piece.Color.BLACK);
+                if (isCheckOnWhite && isMate(player, Piece.Color.WHITE)) {
                     gameSession.setCheckMate(true);
 
-                } else if (isCheckOnBlack && isMate(Piece.Color.BLACK)) {
+                } else if (isCheckOnBlack && isMate(player, Piece.Color.BLACK)) {
                     gameSession.setCheckMate(true);
                 }
                 gameSession.setCheckOnBlack(isCheckOnBlack);
@@ -155,7 +177,8 @@ public class ApiController {
         }
     }
 
-    private boolean canMoveAndIsNotCheck(Piece piece, int x, int y) {
+    private boolean canMoveAndIsNotCheck(@ModelAttribute("player") Player player, Piece piece, int x, int y) {
+        GameSession gameSession = gameSessions.get(player.getGameSessionId());
         if (piece.getX() == -1 || piece.getY() == -1 || x < 0 || x > 7 || y < 0 || y > 7) {
             return false;
         }
@@ -172,7 +195,7 @@ public class ApiController {
             piece.setLocation(x, y);
         }
 
-        if (canMove && !isCheck(piece.getColor())) {
+        if (canMove && !isCheck(player, piece.getColor())) {
             gameSession.getPiece(x, y).setLocation(preX, preY);
             if (copy.getColor() != null) {
                 gameSession.addPiece(copy);
@@ -188,82 +211,83 @@ public class ApiController {
     }
 
     // zwraca true takze jesli krol nie moze sie ruszyc wiec sprawdzic przez ism
-    private synchronized boolean isMate(Piece.Color color) {
+    private synchronized boolean isMate(@ModelAttribute("player") Player player, Piece.Color color) {
+        GameSession gameSession = gameSessions.get(player.getGameSessionId());
         for (Piece piece : gameSession.getPieces().stream().filter(e -> e.getColor() == color).collect(Collectors.toList())) {
             switch (piece.getType()) {
                 case PAWN:
                     switch (piece.getColor()) {
                         case WHITE:
-                            if (canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY())
-                                    || canMoveAndIsNotCheck(piece, piece.getX() - 2, piece.getY())
-                                    || canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY() - 1)
-                                    || canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY() + 1)) {
+                            if (canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY())
+                                    || canMoveAndIsNotCheck(player, piece, piece.getX() - 2, piece.getY())
+                                    || canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY() - 1)
+                                    || canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY() + 1)) {
                                 return false;
                             }
                         case BLACK:
-                            if (canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY())
-                                    || canMoveAndIsNotCheck(piece, piece.getX() + 2, piece.getY())
-                                    || canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY() - 1)
-                                    || canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY() + 1)) {
+                            if (canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY())
+                                    || canMoveAndIsNotCheck(player, piece, piece.getX() + 2, piece.getY())
+                                    || canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY() - 1)
+                                    || canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY() + 1)) {
                                 return false;
                             }
                     }
                     break;
                 case ROOK:
                     for (int i = 0; i < 8; ++i) {
-                        if (canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY())
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY())
-                                || canMoveAndIsNotCheck(piece, piece.getX(), piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX(), piece.getY() - i)) {
+                        if (canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY())
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY())
+                                || canMoveAndIsNotCheck(player, piece, piece.getX(), piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX(), piece.getY() - i)) {
                             return false;
                         }
                     }
                     break;
                 case BISHOP:
                     for (int i = 0; i < 8; ++i) {
-                        if (canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY() - i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY() - i)) {
+                        if (canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY() - i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY() - i)) {
                             return false;
                         }
                     }
                     break;
                 case KNIGHT:
-                    if (canMoveAndIsNotCheck(piece, piece.getX() + 2, piece.getY() + 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() + 2, piece.getY() - 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() - 2, piece.getY() - 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() - 2, piece.getY() +1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY() + 2)
-                            || canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY() - 2)
-                            || canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY() + 2)
-                            || canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY() - 2)) {
+                    if (canMoveAndIsNotCheck(player, piece, piece.getX() + 2, piece.getY() + 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() + 2, piece.getY() - 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() - 2, piece.getY() - 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() - 2, piece.getY() +1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY() + 2)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY() - 2)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY() + 2)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY() - 2)) {
                         return false;
                     }
                     break;
                 case QUEEN:
                     for (int i = 0; i < 8; ++i) {
-                        if (canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY() - i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY() - i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() + i, piece.getY() - i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY() + i)
-                                || canMoveAndIsNotCheck(piece, piece.getX() - i, piece.getY() - i)) {
+                        if (canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY() - i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY() - i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() + i, piece.getY() - i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY() + i)
+                                || canMoveAndIsNotCheck(player, piece, piece.getX() - i, piece.getY() - i)) {
                             return false;
                         }
                     }
                     break;
                 case KING:
-                    if (canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY() + 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY())
-                            || canMoveAndIsNotCheck(piece, piece.getX() + 1, piece.getY() - 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY() - 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX() - 1, piece.getY())
-                            || canMoveAndIsNotCheck(piece, piece.getX() -1, piece.getY() + 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX(), piece.getY() - 1)
-                            || canMoveAndIsNotCheck(piece, piece.getX(), piece.getY() + 1)) {
+                    if (canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY() + 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY())
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() + 1, piece.getY() - 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY() - 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() - 1, piece.getY())
+                            || canMoveAndIsNotCheck(player, piece, piece.getX() -1, piece.getY() + 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX(), piece.getY() - 1)
+                            || canMoveAndIsNotCheck(player, piece, piece.getX(), piece.getY() + 1)) {
                         return false;
                     }
             }
@@ -272,32 +296,37 @@ public class ApiController {
     }
 
 
-    private synchronized boolean moveAndUndo(Piece piece, int x, int y) {
+    private synchronized boolean moveAndUndo(@ModelAttribute("player") Player player, Piece piece, int x, int y) {
+        GameSession gameSession = gameSessions.get(player.getGameSessionId());
         if (piece.getX() == -1 || piece.getY() == -1 || x < 0 || x > 7 || y < 0 || y > 7) {
             return false;
         }
-        Piece copy = gameSession.getPiece(x, y);
+        Piece copy = new Piece(gameSession.getPiece(x, y));
         int preX = piece.getX();
         int preY = piece.getY();
         boolean canMove = gameSession.move(piece, x, y);
+        log.info(piece.toString());
+        log.info(canMove+"");
 
         if (canMove) {
             gameSession.setPieceDead(x, y);
             piece.setLocation(x, y);
-            boolean isCheck = isCheck(piece.getColor());
-            gameSession.getPiece(x, y).setLocation(preX, preY);
+            boolean isCheck = isCheck(player, piece.getColor());
+            //gameSession.getPiece(x, y).setLocation(preX, preY);
+            piece.setLocation(preX, preY);
             if (copy.getColor() != null) {
                 gameSession.addPiece(copy);
             }
-            return isCheck;
+            return !isCheck;
         } else {
-            return true;
+            return false;
         }
     }
 
 
 
-    private synchronized boolean isCheck(Piece.Color color) {
+    private synchronized boolean isCheck(@ModelAttribute("player") Player player, Piece.Color color) {
+        GameSession gameSession = gameSessions.get(player.getGameSessionId());
         int i = 1;
         boolean leftUp = true;
         boolean rightUp = true;

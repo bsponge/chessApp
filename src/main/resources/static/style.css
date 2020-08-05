@@ -6,6 +6,10 @@
     transform: translate(-50%, -50%);
 }
 
+body {
+    background-color: black;
+}
+
 #panel {
     align: right;
 }

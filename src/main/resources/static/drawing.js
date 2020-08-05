@@ -2,7 +2,7 @@
 let size = 80
 let images = new Map()
 
-let domain = "http://localhost:8080/"
+let domain = window.location.href
 let playerInfoUrl = domain + "api/player"
 let gameUrl = domain + "api/game"
 let findGameUrl = domain + "api/findGame"
@@ -221,9 +221,9 @@ function drawPieces() {
         }).then(function(data) {
         gameSession = data
     })
-    if (typeof gameSession.pieces != "undefined" && playerInfo.side != null) {
+    if (typeof gameSession.pieces != "undefined" && gameSession.pieces != null && playerInfo.side != null && gameSession != null) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        console.log(gameSession.checkMate)
+        //console.log(gameSession.checkMate)
         if (playerInfo.side == "WHITE" && gameSession.checkOnWhite == true) {
             document.body.style.backgroundColor = "red"
             document.getElementById("text").innerText = "CHECK"
@@ -231,13 +231,13 @@ function drawPieces() {
             document.body.style.backgroundColor = "red"
             document.getElementById("text").innerText = "CHECK"
         } else if (playerInfo.side == "WHITE" && gameSession.checkOnWhite == false) {
-            document.body.style.backgroundColor = "white"
+            document.body.style.backgroundColor = "black"
             document.getElementById("text").innerText = ""
         } else if (playerInfo.side == "BLACK" && gameSession.checkOnWhite == false) {
-            document.body.style.backgroundColor = "white"
+            document.body.style.backgroundColor = "black"
             document.getElementById("text").innerText = ""
         }
-        console.log(gameSession.checkMate)
+        //console.log(gameSession.checkMate)
         if (gameSession.checkMate == true) {
             console.log("CHECKMATE")
             document.getElementById("text").innerText = "CHECKMATE"

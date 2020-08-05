@@ -3,16 +3,17 @@ package com.example.demo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
 
 
 @Data
-@Component
 @Slf4j
 public class GameSession {
     public List<Piece> pieces;
@@ -26,13 +27,8 @@ public class GameSession {
     private volatile boolean checkOnBlack = false;
     private volatile boolean checkMate = false;
 
-    @Autowired
-    public GameSession(Vector<Piece> pieces) {
-        this.pieces = pieces;
-    }
-
-    @PostConstruct
-    private void postConstruct() {
+    public GameSession() {
+        pieces = new ArrayList<>();
         for (int i = 0; i < 32; ++i) {
             this.pieces.add(new Piece());
             this.pieces.get(i).setAlive(true);
@@ -63,7 +59,13 @@ public class GameSession {
             this.pieces.get(22 + i * 8).setType(Piece.Type.KNIGHT);
             this.pieces.get(23 + i * 8).setType(Piece.Type.ROOK);
         }
-}
+
+        sessionId = UUID.randomUUID();
+    }
+
+    public GameSession(boolean bool) {
+
+    }
 
     public synchronized Piece getPiece(int x, int y) {
         return pieces
@@ -74,7 +76,7 @@ public class GameSession {
     }
 
     public synchronized void addPiece(Piece piece) {
-        boolean b = pieces.add(piece);
+        pieces.add(piece);
     }
 
     public synchronized boolean move(Piece piece, int x, int y) {
@@ -84,6 +86,7 @@ public class GameSession {
         int horizontal;
         int vertical;
         boolean descending;
+        log.info("IN MOVE PIECES CHECKING: " + this.getPiece(1,4));
         if (x > -1 && x < 8 && y > -1 && y < 8) {
             switch (piece.getType()) {
                 case PAWN:
@@ -191,26 +194,33 @@ public class GameSession {
                     }
                     break;
                 case QUEEN:
+                    log.info("W GAMESESSION MOVE");
                     horizontal = piece.getY() - y < 0 ? 2 : 4;
                     vertical = piece.getX() - x > 0 ? 3 : 1;
                     copyX = piece.getX();
                     copyY = piece.getY();
                     if (Math.abs(piece.getY() - y) == Math.abs(piece.getX() - x)) {
+                        log.info("POWINNO BYC TU");
                         while (canMove && copyX > -1 && copyX < 8 && copyY > -1 && copyY < 8) {
                             if (vertical == 1 && horizontal == 2) {
                                 if (this.getPiece(++copyX, ++copyY).getColor() == piece.getColor()) {
+                                    log.info("NIE1");
+                                    log.info(this.getPiece(copyX, copyY).toString());
                                     canMove = false;
                                 }
                             } else if (vertical == 3 && horizontal == 4) {
                                 if (this.getPiece(--copyX, ++copyY).getColor() == piece.getColor()) {
+                                    log.info("NIE2");
                                     canMove = false;
                                 }
                             } else if (vertical == 3) {
                                 if (this.getPiece(--copyX, --copyY).getColor() == piece.getColor()) {
+                                    log.info("NIE3");
                                     canMove = false;
                                 }
                             } else {
                                 if (this.getPiece(++copyX, --copyY).getColor() == piece.getColor()) {
+                                    log.info("NIE4");
                                     canMove = false;
                                 }
                             }
@@ -261,6 +271,7 @@ public class GameSession {
     }
 
     public synchronized void setPieceDead(int x, int y) {
+        log.info("USUWANIE");
         this.pieces.removeIf(e -> e.getX() == x && e.getY() == y);
    }
 }

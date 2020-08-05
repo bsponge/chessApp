@@ -21,11 +21,6 @@ public class Player {
     private UUID gameSessionId;
     private String side;
 
-    @Autowired
-    public Player(UUID id) {
-        this.id = id;
-    }
-
     public Player() {
         this.id = UUID.randomUUID();
     }

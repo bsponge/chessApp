@@ -22,6 +22,14 @@ public class Piece {
         this.y = -1;
     }
 
+    public Piece(Piece piece) {
+        this.type = piece.getType();
+        this.color = piece.getColor();
+        this.x = piece.getX();
+        this.y = piece.getY();
+        this.alive = piece.isAlive();
+    }
+
     public void setPiece(Piece piece) {
         this.type = piece.getType();
         this.color = piece.getColor();
