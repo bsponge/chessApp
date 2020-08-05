@@ -1,7 +1,6 @@
 package com.example.demo;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -33,7 +32,6 @@ public class ApiController {
     public ApiController(ExtendedHashMap gameSessions, GenericWebApplicationContext context) {
         this.gameSessions = gameSessions;
         this.context = context;
-        log.info("APICONTROLLER CREATED");
     }
 
 
@@ -48,7 +46,6 @@ public class ApiController {
     @ResponseBody
     public synchronized ResponseEntity<HttpStatus> findGame(@ModelAttribute("player") Player player) {
         GameSession gameSession = gameSessions.getGame();
-        log.info("IN FIND GAME: " + player.toString());
         if (gameSession != null) {
             if (gameSession.getPlayerWhite() == null) {
                 gameSession.setPlayerWhite(player);
@@ -69,7 +66,6 @@ public class ApiController {
     @GetMapping("/isGameReady")
     @ResponseBody
     public ResponseEntity<HttpStatus> isGameReady(@ModelAttribute("player") Player player) {
-        log.info("IN IS GAME READY: " + player.toString());
         if (player.getGameSessionId() == null || !gameSessions.containsKey(player.getGameSessionId())) {
             return ACCEPTED_STATUS;
         }
@@ -113,19 +109,12 @@ public class ApiController {
                     || gameSession.getPlayerBlack() == null
                     || gameSession.getPlayerWhite() == null
                     || !gameSession.getPlayersTurn().equals(player.getId())) {
-                return new ResponseEntity<>(HttpStatus.ACCEPTED);
+                return ACCEPTED_STATUS;
             }
-            log.info("W MOVE");
-
 
             canMove = moveAndUndo(player, p, row, column);
 
-
-            //log.info("" + canMove);
-            //log.info(gameSession.getPiece(row, column).toString());
-
             if (canMove && gameSession.getPiece(row, column).isAlive()) {
-                log.info("TU?");
                 gameSession.setPieceDead(row, column);
                 p.setLocation(row, column);
                 gameSession.setPlayersTurn(
@@ -146,9 +135,8 @@ public class ApiController {
                 } else {
                     gameSession.setPlayersTurn(gameSession.getPlayerWhite().getId());
                 }
-                return new ResponseEntity<>(HttpStatus.OK);
+                return OK_STATUS;
             } else if (canMove) {
-                log.info("TU W MOVE");
                 p.setLocation(row, column);
                 gameSession.setPlayersTurn(
                         gameSession.getPlayerWhite().getId().equals(gameSession.getPlayersTurn()) ? gameSession.getPlayerBlack().getId() : gameSession.getPlayerWhite().getId()
@@ -168,12 +156,12 @@ public class ApiController {
                 } else {
                     gameSession.setPlayersTurn(gameSession.getPlayerWhite().getId());
                 }
-                return new ResponseEntity<>(HttpStatus.OK);
+                return OK_STATUS;
             } else {
-                return new ResponseEntity<>(HttpStatus.ACCEPTED);
+                return ACCEPTED_STATUS;
             }
         } else {
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+            return ACCEPTED_STATUS;
         }
     }
 
@@ -305,14 +293,11 @@ public class ApiController {
         int preX = piece.getX();
         int preY = piece.getY();
         boolean canMove = gameSession.move(piece, x, y);
-        log.info(piece.toString());
-        log.info(canMove+"");
 
         if (canMove) {
             gameSession.setPieceDead(x, y);
             piece.setLocation(x, y);
             boolean isCheck = isCheck(player, piece.getColor());
-            //gameSession.getPiece(x, y).setLocation(preX, preY);
             piece.setLocation(preX, preY);
             if (copy.getColor() != null) {
                 gameSession.addPiece(copy);

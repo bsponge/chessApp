@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -17,7 +16,6 @@ public class ExtendedHashMap{
 
     @Autowired
     public ExtendedHashMap(ConcurrentHashMap<UUID, GameSession> map) {
-        log.info("EXTENDEDHASHMAP CREATED");
         this.map = map;
     }
 
@@ -41,17 +39,14 @@ public class ExtendedHashMap{
 
     public synchronized GameSession getGame() {
         if (map.isEmpty()) {
-            log.info("CREATING NEW GAMESESSION, CUZ MAP IS EMPTY");
             GameSession gameSession = new GameSession();
             map.put(gameSession.getSessionId(), gameSession);
             lastAdded = gameSession.getSessionId();
         } else if (map.get(lastAdded).getPlayerWhite() != null && map.get(lastAdded).getPlayerBlack() != null) {
-            log.info("CREATING NEW GAMESESSION, CUZ NO FREE SPACE");
             GameSession gameSession = new GameSession();
             map.put(gameSession.getSessionId(), gameSession);
             lastAdded = gameSession.getSessionId();
         }
-        log.info("RETURNING LAST GAME SESSION");
         return map.get(lastAdded);
     }
 }
