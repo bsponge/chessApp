@@ -15,8 +15,6 @@ import java.util.UUID;
 @Component
 @SessionScope
 public class Player {
-
-
     private UUID id;
     private UUID gameSessionId;
     private String side;

@@ -22,6 +22,13 @@ public class Piece {
         this.y = -1;
     }
 
+    public Piece(Type type, Color color, int x, int y) {
+        this.type = type;
+        this.color = color;
+        this.x = x;
+        this.y = y;
+    }
+
     public Piece(Piece piece) {
         this.type = piece.getType();
         this.color = piece.getColor();
@@ -36,6 +43,10 @@ public class Piece {
         this.x = piece.getX();
         this.y = piece.getY();
         this.alive = piece.isAlive();
+    }
+
+    public boolean isOpposite(Piece piece) {
+        return this.color != piece.color;
     }
 
     public boolean isHittingOnDiagonal(Color yourSide) {
