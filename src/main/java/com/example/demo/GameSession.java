@@ -28,9 +28,10 @@ import static com.example.demo.Piece.Type.BISHOP;
 
 /*
             TODO:
-            - isMoveLegal
-            - loadGameFromFEN dodaje tylko figury, brak obslugi calego wyrazenia FEN (drugiej czesci)
+            - loadGameFromFEN dodaje tylko figury, brak obslugi calego wyrazenia FEN (bicie w przelocie i liczba ruchów)
             - napisac testy
+            - przeniesienie usuwania piona z bicia w przelocie z isMoveLegal do makeMove
+            - sprawdzenie roszady
  */
 
 @Data
@@ -43,6 +44,11 @@ public class GameSession {
     private Set<Piece> blackPieces;
     private boolean isCheckOnWhite = false;
     private boolean isCheckOnBlack = false;
+    private boolean isWhiteLeftCastleAvailable = true;
+    private boolean isWhiteRightCastleAvailable = true;
+    private boolean isBlackLeftCastleAvailable = true;
+    private boolean isBlackRightCastleAvailable = true;
+    private Piece.Color turn = Piece.Color.WHITE;
     private Piece whiteKing;
     private Piece blackKing;
     private Move lastMove;
@@ -111,14 +117,15 @@ public class GameSession {
             }
             System.out.println("");
         }
-        System.out.println("WHITE");
+        System.out.println("");
+        /*System.out.println("WHITE");
         for (Piece p : whitePieces) {
             System.out.println(p);
         }
         System.out.println("BLACK");
         for (Piece p : blackPieces) {
             System.out.println(p);
-        }
+        }*/
     }
 
     public void loadGameFromFEN(String fen) {
@@ -142,55 +149,80 @@ public class GameSession {
                 } else {
                     switch (pieces[i][k]) {
                         case 'r':
-                            chessboard[j][7-i] = new Piece(Piece.Type.ROOK, Piece.Color.BLACK, j, 7 - i);
-                            blackPieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.ROOK, Piece.Color.BLACK, j, 7 - i);
+                            blackPieces.add(chessboard[j][7 - i]);
                             break;
                         case 'R':
-                            chessboard[j][7-i] = new Piece(Piece.Type.ROOK, Piece.Color.WHITE, j, 7 - i);
-                            whitePieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.ROOK, Piece.Color.WHITE, j, 7 - i);
+                            whitePieces.add(chessboard[j][7 - i]);
                             break;
                         case 'p':
-                            chessboard[j][7-i] = new Piece(Piece.Type.PAWN, Piece.Color.BLACK, j, 7 - i);
-                            blackPieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.PAWN, Piece.Color.BLACK, j, 7 - i);
+                            blackPieces.add(chessboard[j][7 - i]);
                             break;
                         case 'P':
-                            chessboard[j][7-i] = new Piece(Piece.Type.PAWN, Piece.Color.WHITE, j, 7 - i);
-                            whitePieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.PAWN, Piece.Color.WHITE, j, 7 - i);
+                            whitePieces.add(chessboard[j][7 - i]);
                             break;
                         case 'N':
-                            chessboard[j][7-i] = new Piece(Piece.Type.KNIGHT, Piece.Color.WHITE, j, 7 - i);
-                            whitePieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.KNIGHT, Piece.Color.WHITE, j, 7 - i);
+                            whitePieces.add(chessboard[j][7 - i]);
                             break;
                         case 'n':
-                            chessboard[j][7-i] = new Piece(Piece.Type.KNIGHT, Piece.Color.BLACK, j, 7 - i);
-                            blackPieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.KNIGHT, Piece.Color.BLACK, j, 7 - i);
+                            blackPieces.add(chessboard[j][7 - i]);
                             break;
                         case 'Q':
-                            chessboard[j][7-i] = new Piece(Piece.Type.QUEEN, Piece.Color.WHITE, j, 7 - i);
-                            whitePieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.QUEEN, Piece.Color.WHITE, j, 7 - i);
+                            whitePieces.add(chessboard[j][7 - i]);
                             break;
                         case 'q':
-                            chessboard[j][7-i] = new Piece(Piece.Type.QUEEN, Piece.Color.BLACK, j, 7 - i);
-                            blackPieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.QUEEN, Piece.Color.BLACK, j, 7 - i);
+                            blackPieces.add(chessboard[j][7 - i]);
                             break;
                         case 'K':
-                            chessboard[j][7-i] = new Piece(Piece.Type.KING, Piece.Color.WHITE, j, 7 - i);
-                            whitePieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.KING, Piece.Color.WHITE, j, 7 - i);
+                            whitePieces.add(chessboard[j][7 - i]);
                             break;
                         case 'k':
-                            chessboard[j][7-i] = new Piece(Piece.Type.KING, Piece.Color.BLACK, j, 7 - i);
-                            blackPieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(Piece.Type.KING, Piece.Color.BLACK, j, 7 - i);
+                            blackPieces.add(chessboard[j][7 - i]);
                             break;
                         case 'b':
-                            chessboard[j][7-i] = new Piece(BISHOP, Piece.Color.BLACK,  j, 7 - i);
-                            blackPieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(BISHOP, Piece.Color.BLACK, j, 7 - i);
+                            blackPieces.add(chessboard[j][7 - i]);
                             break;
                         case 'B':
-                            chessboard[j][7-i] = new Piece(BISHOP, Piece.Color.WHITE, j, 7 - i);
-                            whitePieces.add(chessboard[j][7-i]);
+                            chessboard[j][7 - i] = new Piece(BISHOP, Piece.Color.WHITE, j, 7 - i);
+                            whitePieces.add(chessboard[j][7 - i]);
                             break;
                     }
                 }
+            }
+        }
+
+        if (arr[1].charAt(0) == 'w') {
+            turn = Piece.Color.WHITE;
+        } else {
+            turn = Piece.Color.BLACK;
+        }
+
+        char[] castles = arr[2].toCharArray();
+        for (char c : castles) {
+            switch (c) {
+                case 'K':
+                    isWhiteRightCastleAvailable = true;
+                case 'k':
+                    isBlackRightCastleAvailable = true;
+                case 'Q':
+                    isWhiteLeftCastleAvailable = true;
+                case 'q':
+                    isBlackLeftCastleAvailable = true;
+                case '-':
+                    isWhiteLeftCastleAvailable = false;
+                    isWhiteRightCastleAvailable = false;
+                    isBlackLeftCastleAvailable = false;
+                    isBlackRightCastleAvailable = false;
             }
         }
         //
@@ -205,10 +237,12 @@ public class GameSession {
         Piece copy = chessboard[move.getToX()][move.getToY()];
         chessboard[move.getToX()][move.getToY()] = chessboard[move.getFromX()][move.getFromY()];
         chessboard[move.getFromX()][move.getFromY()] = null;
-        if (copy.getColor() == Piece.Color.WHITE) {
-            whitePieces.remove(copy);
-        } else {
-            blackPieces.remove(copy);
+        if (copy != null) {
+            if (copy.getColor() == Piece.Color.WHITE) {
+                whitePieces.remove(copy);
+            } else {
+                blackPieces.remove(copy);
+            }
         }
         chessboard[move.getFromX()][move.getFromY()] = null;
         return copy;
@@ -223,6 +257,56 @@ public class GameSession {
         chessboard[move.getFromX()][move.getFromY()] = chessboard[move.getToX()][move.getToY()];
         chessboard[move.getFromX()][move.getFromY()].setLocation(move.getFromX(), move.getFromY());
         chessboard[move.getToX()][move.getToY()] = piece;
+    }
+
+    public void makeMove(Move move) {
+        if (isMoveLegal(move)) {
+            move(move);
+            if (chessboard[move.getToX()][move.getToY()].getType() == Piece.Type.KING) {
+                if (move.getFromX() == 4) {
+                    if (chessboard[move.getToX()][move.getToY()].getColor() == Piece.Color.WHITE) {
+                        if (move.getToX() == 2) {
+                            move(new Move(0, 0, 3, 0));
+                        } else {
+                            move(new Move(7, 0, 5, 0));
+                        }
+                    } else {
+                        if (move.getToX() == 2) {
+                            move(new Move(0, 7, 3, 7));
+                        } else {
+                            move(new Move(7, 7, 5, 7));
+                        }
+                    }
+                }
+                if (chessboard[move.getToX()][move.getToY()].getColor() == Piece.Color.WHITE) {
+                    isWhiteLeftCastleAvailable = false;
+                    isWhiteRightCastleAvailable = false;
+                } else {
+                    isBlackLeftCastleAvailable = false;
+                    isBlackRightCastleAvailable = false;
+                }
+            }
+            lastMove = move;
+            if (chessboard[move.getToX()][move.getToY()].getColor() == Piece.Color.WHITE) {
+                turn = Piece.Color.BLACK;
+            } else {
+                turn = Piece.Color.WHITE;
+            }
+        } else if (chessboard[move.getToX()][move.getToY()].getType() == Piece.Type.ROOK) {
+            if (chessboard[move.getToX()][move.getToY()].getColor() == Piece.Color.WHITE) {
+                if (move.getFromX() == 0) {
+                    isWhiteLeftCastleAvailable = false;
+                } else if (move.getFromX() == 7) {
+                    isWhiteRightCastleAvailable = false;
+                }
+            } else {
+                if (move.getFromX() == 0) {
+                    isBlackLeftCastleAvailable = false;
+                } else if (move.getFromX() == 7) {
+                    isBlackRightCastleAvailable = false;
+                }
+            }
+        }
     }
 
     private boolean isMoveLegal(Move move) {
@@ -242,22 +326,33 @@ public class GameSession {
                                     tmp = move(move);
                                     isCheck = isCheck(Piece.Color.WHITE);
                                     undoMove(move, tmp);
-                                    return isCheck;
+                                    return !isCheck;
                                 }
                             } else if (move.getFromY() + 2 == move.getToY()) {
                                 if (chessboard[move.getFromX()][move.getFromY() + 1] == null && chessboard[move.getFromX()][move.getFromY() + 2] == null) {
                                     tmp = move(move);
                                     isCheck = isCheck(Piece.Color.WHITE);
                                     undoMove(move, tmp);
-                                    return isCheck;
+                                    return !isCheck;
                                 }
                             }
+                        } else if (move.getFromY() + 1 == move.getToY()
+                                && Math.abs(move.getFromX() - move.getToX()) == 1
+                                && chessboard[move.getToX()][move.getToY()] == null
+                                && chessboard[move.getToX()][move.getFromY()].getType() == Piece.Type.PAWN
+                                && chessboard[move.getToX()][move.getFromY()].isOpposite(chessboard[move.getFromX()][move.getFromY()])) {
+                            tmp = move(move);
+                            isCheck = isCheck(Piece.Color.WHITE);
+                            blackPieces.remove(chessboard[move.getToX()][move.getFromY()]);
+                            chessboard[move.getToX()][move.getFromY()] = null;
+                            undoMove(move, tmp);
+                            return !isCheck;
                         } else if (move.getToY() - move.getFromY() == 1 && Math.abs(move.getFromX() - move.getToX()) == 1) {
                             if (chessboard[move.getToX()][move.getToY()] != null && chessboard[move.getToX()][move.getToY()].getColor() == Piece.Color.BLACK) {
                                 tmp = move(move);
                                 isCheck = isCheck(Piece.Color.WHITE);
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             }
                         }
                     } else {
@@ -267,22 +362,33 @@ public class GameSession {
                                     tmp = move(move);
                                     isCheck = isCheck(Piece.Color.BLACK);
                                     undoMove(move, tmp);
-                                    return isCheck;
+                                    return !isCheck;
                                 }
                             } else if (move.getFromY() - 2 == move.getToY()) {
                                 if (chessboard[move.getFromX()][move.getFromY() - 1] == null && chessboard[move.getFromX()][move.getFromY() - 2] == null) {
                                     tmp = move(move);
                                     isCheck = isCheck(Piece.Color.BLACK);
                                     undoMove(move, tmp);
-                                    return isCheck;
+                                    return !isCheck;
                                 }
                             }
+                        } else if (move.getFromY() - 1 == move.getToY()
+                                && Math.abs(move.getFromX() - move.getToX()) == 1
+                                && chessboard[move.getToX()][move.getToY()] == null
+                                && chessboard[move.getToX()][move.getFromY()].getType() == Piece.Type.PAWN
+                                && chessboard[move.getToX()][move.getFromY()].isOpposite(chessboard[move.getFromX()][move.getFromY()])) {
+                            tmp = move(move);
+                            isCheck = isCheck(Piece.Color.BLACK);
+                            blackPieces.remove(chessboard[move.getToX()][move.getFromY()]);
+                            chessboard[move.getToX()][move.getFromY()] = null;
+                            undoMove(move, tmp);
+                            return !isCheck;
                         } else if (move.getFromY() - move.getToY() == 1 && Math.abs(move.getFromX() - move.getToX()) == 1) {
                             if (chessboard[move.getToX()][move.getToY()] != null && chessboard[move.getToX()][move.getToY()].getColor() == Piece.Color.WHITE) {
                                 tmp = move(move);
                                 isCheck = isCheck(Piece.Color.BLACK);
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             }
                         }
                     }
@@ -293,63 +399,56 @@ public class GameSession {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() + 2 == move.getToX() && move.getFromY() - 1 == move.getToY()) {
+                    } else if (move.getFromX() + 2 == move.getToX() && move.getFromY() - 1 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() - 2 == move.getToX() && move.getFromY() + 1 == move.getToY()) {
+                    } else if (move.getFromX() - 2 == move.getToX() && move.getFromY() + 1 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() - 2 == move.getToX() && move.getFromY() - 1 == move.getToY()) {
+                    } else if (move.getFromX() - 2 == move.getToX() && move.getFromY() - 1 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() + 1 == move.getToX() && move.getFromY() + 2 == move.getToY()) {
+                    } else if (move.getFromX() + 1 == move.getToX() && move.getFromY() + 2 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() + 1 == move.getToX() && move.getFromY() - 2 == move.getToY()) {
+                    } else if (move.getFromX() + 1 == move.getToX() && move.getFromY() - 2 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() - 1 == move.getToX() && move.getFromY() + 2 == move.getToY()) {
+                    } else if (move.getFromX() - 1 == move.getToX() && move.getFromY() + 2 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
-                    }
-                    else if (move.getFromX() - 1 == move.getToX() && move.getFromY() - 2 == move.getToY()) {
+                    } else if (move.getFromX() - 1 == move.getToX() && move.getFromY() - 2 == move.getToY()) {
                         if (chessboard[move.getToX()][move.getToY()] == null || piece.isOpposite(chessboard[move.getToX()][move.getToY()])) {
                             tmp = move(move);
                             isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                             undoMove(move, tmp);
-                            return isCheck;
+                            return !isCheck;
                         }
                     }
                     break;
@@ -365,7 +464,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -382,7 +481,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -399,7 +498,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -416,7 +515,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -435,7 +534,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -452,7 +551,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -469,7 +568,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -486,7 +585,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -505,7 +604,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -522,7 +621,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -539,7 +638,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -556,7 +655,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -573,7 +672,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -590,7 +689,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -607,7 +706,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -624,7 +723,7 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
@@ -638,10 +737,46 @@ public class GameSession {
                                 tmp = move(move);
                                 isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
                                 undoMove(move, tmp);
-                                return isCheck;
+                                return !isCheck;
                             } else {
                                 return false;
                             }
+                        }
+                    } else if (piece == whiteKing && !isCheck(Piece.Color.WHITE) && isWhiteRightCastleAvailable && move.getToX() == 6 && move.getToY() == 0 && chessboard[5][0] == null && chessboard[6][0] == null) {
+                        if (chessboard[move.getFromX()][move.getFromY()].isOpposite(chessboard[move.getToX()][move.getToY()])) {
+                            tmp = move(move);
+                            isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
+                            undoMove(move, tmp);
+                            return !isCheck;
+                        } else {
+                            return false;
+                        }
+                    } else if (piece == blackKing && !isCheck(Piece.Color.BLACK) && isBlackRightCastleAvailable && move.getToX() == 6 && move.getToY() == 0 && chessboard[5][7] == null && chessboard[6][7] == null) {
+                        if (chessboard[move.getFromX()][move.getFromY()].isOpposite(chessboard[move.getToX()][move.getToY()])) {
+                            tmp = move(move);
+                            isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
+                            undoMove(move, tmp);
+                            return !isCheck;
+                        } else {
+                            return false;
+                        }
+                    } else if (piece == whiteKing && !isCheck(Piece.Color.WHITE) && isWhiteLeftCastleAvailable && move.getToX() == 2 && move.getToY() == 0 && chessboard[1][0] == null && chessboard[2][0] == null && chessboard[3][0] == null) {
+                        if (chessboard[move.getFromX()][move.getFromY()].isOpposite(chessboard[move.getToX()][move.getToY()])) {
+                            tmp = move(move);
+                            isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
+                            undoMove(move, tmp);
+                            return !isCheck;
+                        } else {
+                            return false;
+                        }
+                    } else if (piece == blackKing && !isCheck(Piece.Color.BLACK) && isBlackLeftCastleAvailable && move.getToX() == 2 && move.getToY() == 0 && chessboard[1][7] == null && chessboard[2][7] == null && chessboard[3][7] == null) {
+                        if (chessboard[move.getFromX()][move.getFromY()].isOpposite(chessboard[move.getToX()][move.getToY()])) {
+                            tmp = move(move);
+                            isCheck = isCheck(chessboard[move.getToX()][move.getToY()].getColor());
+                            undoMove(move, tmp);
+                            return !isCheck;
+                        } else {
+                            return false;
                         }
                     }
                     break;
@@ -817,8 +952,6 @@ public class GameSession {
                             while (piece.getX() + i < 8 && piece.getY() - i >= 0 && chessboard[piece.getX() + i][piece.getY() - i] == null) {
                                 ++i;
                             }
-                            System.out.println(chessboard[piece.getX() + 1][piece.getY() - 1]);
-                            System.out.println("tututututuututututututtu" + " " + (piece.getX() + 1) + " " + (piece.getY() - 1));
                             if (whiteKing.getX() == piece.getX() + i && whiteKing.getY() + i == piece.getY()) {
                                 return true;
                             }
@@ -949,7 +1082,7 @@ public class GameSession {
                             return true;
                         }
                         if (piece.getY() + 2 == blackKing.getY() && piece.getX() - 1 == blackKing.getX()) {
-                        return true;
+                            return true;
                         }
                         break;
                     case BISHOP:
@@ -1078,5 +1211,9 @@ public class GameSession {
             }
         }
         return false;
+    }
+
+    public void setLastMove(Move move) {
+        lastMove = move;
     }
 }

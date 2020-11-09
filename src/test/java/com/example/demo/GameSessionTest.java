@@ -18,8 +18,10 @@ public class GameSessionTest {
     @Test
     public void loadGameFromFEN() {
         GameSession gameSession = new GameSession();
-        gameSession.loadGameFromFEN("rnb1kb1r/pp1p1ppp/4Qn2/2p2q1p/8/4PNP1/PPP1BPPP/RNB1K2R w KQkq - 0 1");
-        //gameSession.printChessboard();
-        System.out.println(gameSession.isCheck(Piece.Color.BLACK));
+        gameSession.loadGameFromFEN("rnbqkbnr/ppppp1pp/8/4Pp2/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
+        gameSession.printChessboard();
+        gameSession.setLastMove(new Move(5, 6, 5, 4));
+        gameSession.makeMove(new Move(4, 4, 5, 5));
+        gameSession.printChessboard();
     }
 }

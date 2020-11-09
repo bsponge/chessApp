@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PieceConfiguration {
     @Bean
     public ConcurrentHashMap<UUID, GameSession> map() {
-        log.info("CREATING MAP");
         return new ConcurrentHashMap<>();
     }
 

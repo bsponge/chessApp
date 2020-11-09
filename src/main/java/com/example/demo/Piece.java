@@ -10,7 +10,6 @@ public class Piece {
     public Color color;
     public int x;
     public int y;
-    public boolean alive = false;
 
     synchronized public void setLocation(int x, int y) {
         this.x = x;
@@ -34,7 +33,6 @@ public class Piece {
         this.color = piece.getColor();
         this.x = piece.getX();
         this.y = piece.getY();
-        this.alive = piece.isAlive();
     }
 
     public void setPiece(Piece piece) {
@@ -42,11 +40,14 @@ public class Piece {
         this.color = piece.getColor();
         this.x = piece.getX();
         this.y = piece.getY();
-        this.alive = piece.isAlive();
     }
 
     public boolean isOpposite(Piece piece) {
-        return this.color != piece.color;
+        if (piece != null) {
+            return this.color != piece.color;
+        } else {
+            return true;
+        }
     }
 
     public boolean isHittingOnDiagonal(Color yourSide) {
@@ -69,7 +70,6 @@ public class Piece {
         }
         this.type = null;
         this.color = null;
-        this.alive = false;
         this.x = -1;
         this.y = -1;
     }

@@ -9,7 +9,10 @@ public class Move {
     private int toX;
     private int toY;
 
-    public Move() {}
-
-
+    public Move(int fromX, int fromY, int toX, int toY) {
+        this.fromX = fromX;
+        this.fromY = fromY;
+        this.toX = toX;
+        this.toY = toY;
+    }
 }
