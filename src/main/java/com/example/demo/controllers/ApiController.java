@@ -1,6 +1,10 @@
 package com.example.demo.controllers;
 
-import com.example.demo.MoveMessage;
+import com.example.demo.move.MoveMessage;
+import com.example.demo.move.MoveMessageSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.myProject.GameSession;
 import com.myProject.Piece;
 import com.myProject.Player;
@@ -76,16 +80,21 @@ public class ApiController {
     }
 
     @MessageMapping("/chess/{toGameSession}")
-    public void sendMessage(@DestinationVariable String toGameSession, MoveMessage moveMessage) {
-        if (moveMessage != null) {
-            if (moveMessage.getGameUuid() != null) {
-                if (gameSessions.containsKey(moveMessage.getGameUuid())) {
-                    GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
-                    if (!gameSession.move(moveMessage.getMove()).equals(GameSession.WRONG_MOVE)) {
-                        simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
-                    }
+    public void sendMoveMessage(@DestinationVariable String toGameSession, String move) {
+        log.info(move);
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(MoveMessage.class, new MoveMessageSerializer())
+                .create();
+        MoveMessage moveMessage = gson.fromJson(move, MoveMessage.class);
+        log.info(moveMessage.toString());
+        if (moveMessage.getGameUuid() != null) {
+            if (moveMessage != null) {
+                GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
+                if (gameSession != null && !gameSession.move(moveMessage.getMove()).equals(GameSession.WRONG_MOVE)) {
+                    simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
                 }
             }
         }
     }
+
 }

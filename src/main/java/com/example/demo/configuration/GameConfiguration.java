@@ -1,5 +1,6 @@
 package com.example.demo.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myProject.GameSession;
 import com.myProject.Player;
 import org.springframework.context.annotation.Bean;

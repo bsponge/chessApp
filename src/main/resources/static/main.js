@@ -42,19 +42,29 @@ let refreshInterval = 10
 function sendMsg() {
     $.get("/getGameSessionId", function(data, status) {
         if (status == "success") {
-            if (data != null) {
-                stompClient.send("/app/chess/" + data, {}, "MESSAGE RANDOM 1234")
+            if (data != null && data != "") {
+                let move = {
+                    id: data,
+                    move: {
+                        fromX: 0,
+                        fromY: 1,
+                        toX: 0,
+                        toY: 2,
+                        fromPiece: null,
+                        toPiece: null,
+                        doable: false
+                    }
+                }
+                stompClient.send("/app/chess/" + data, {}, JSON.stringify(move))
             }
         }
     })
-    stompClient.send("/app/chess/" + gameSessionId, {}, "MESSAGE RANDOM 1234")
 }
 
 function findGame() {
     $.get("/getId", function(data, status) {
         if (status == "success") {
             $.post("/findGame", data, function(data, status) {
-                console.log("Data: " + data + "\nStatus: " + status)
                 subscribeToGame()
             })
         }
@@ -66,8 +76,7 @@ function subscribeToGame() {
         if (status == "success") {
             if (data != null) {
                 gameSessionId = data
-                console.log("GameSessionId: " + gameSessionId)
-                stompClient.subscribe(data)
+                stompClient.subscribe("/topic/messages/" + gameSessionId)
             } else {
                 console.log("gameSessionId = null")
             }
