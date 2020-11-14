@@ -3,10 +3,13 @@
 <head>
     <link rel="stylesheet" href="style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js" integrity="sha512-lyIq9fRcCeSCXhp41XC/250UBmypAHV8KW+AhLcSEIksWHBfhzub6XXwDe67wTpOG8zrO2NAU/TYmEaCW+aQSg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js" integrity="sha512-tL4PIUsPy+Rks1go4kQG8M8/ItpRMvKnbBjQm4d2DQnFwgcBYRRN00QdyQnWSCwNMsoY/MfJY8nHp2CzlNdtZA==" crossorigin="anonymous"></script>
 </head>
 <body onload="drawChessboard()">
 <div class="topnav">
-    <a class="active" href="#home">Home</a>
+    <a class="active" href="">Home</a>
+    <a class="active" onclick="findGame()" href="#">Find game</a>
     <a href="#news">News</a>
     <a href="/register">Register</a>
     <a href="#contact">Contact</a>
@@ -21,7 +24,7 @@
 
 <div id="panel"></div>
 
-<script src="drawing.js"></script>
+<script src="main.js"></script>
 
 </body>
 </html>

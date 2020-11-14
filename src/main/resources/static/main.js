@@ -3,11 +3,13 @@ let size = 80
 let images = new Map()
 
 let domain = window.location.href
-let playerInfoUrl = domain + "api/player"
-let gameUrl = domain + "api/game"
-let findGameUrl = domain + "api/findGame"
-let isGameReadyUrl = domain + "api/isGameReady"
-let moveUrl = domain + "api/move/"
+let gameSessionId = "";
+//console.log(domain)
+let sock = new SockJS(domain + "chess")
+let stompClient = Stomp.over(sock)
+stompClient.connect({}, function(frame) {
+    console.log("connected: " + frame)
+})
 
 let list = `BISHOPBLACK.png
 BISHOPWHITE.png
@@ -21,7 +23,6 @@ QUEENBLACK.png
 QUEENWHITE.png
 ROOKBLACK.png
 ROOKWHITE.png`.split("\n")
-let positions = []
 let ctx = document.getElementById('pieces').getContext('2d')
 let timeElement = document.getElementById("panel")
 ctx.canvas.width = size * 8
@@ -29,52 +30,49 @@ ctx.canvas.height = size * 8
 
 preloadAllImages(drawPieces)
 
-const id = setInterval(findGame, 300)
-const anotherId = setInterval(isGameReady, 300)
-let playerInfo = new Object()
-let gameSession = new Object()
-let side = "WHITE"
-let time = 600_000
+//const id = setInterval(findGame, 300)
 let refreshInterval = 10
 
 
-let chessboard = setInterval(drawChessboard, 300)
+//let chessboard = setInterval(drawChessboard, 300)
 
-let infoId = setInterval(getGameSession, 300)
+//setInterval(drawPieces, 100)
+//setInterval(timeDisplay, refreshInterval)
 
-setInterval(drawPieces, 100)
-setInterval(timeDisplay, refreshInterval)
-
-
-function timeDisplay() {
-    if (typeof playerInfo != "undefined" && typeof gameSession != "undefined") {
-        if (playerInfo.id == gameSession.playersTurn) {
-            time -= refreshInterval
-            timeElement.innerText = "YOUR TURN   TIME: " + Math.floor((time / 1000) / 60) + ":" + Math.floor(((time / 1000) % 60))
-        } else {
-            timeElement.innerText = "TIME: " + Math.floor((time / 1000) / 60) + ":" + Math.floor(((time / 1000) % 60))
+function sendMsg() {
+    $.get("/getGameSessionId", function(data, status) {
+        if (status == "success") {
+            if (data != null) {
+                stompClient.send("/app/chess/" + data, {}, "MESSAGE RANDOM 1234")
+            }
         }
-    }
+    })
+    stompClient.send("/app/chess/" + gameSessionId, {}, "MESSAGE RANDOM 1234")
 }
 
 function findGame() {
-    fetch(findGameUrl)
-        .then(function (response) {
-            if (response.status === 200) {
-                console.log("GAME FOUND")
-                clearInterval(id)
-            }
-        })
+    $.get("/getId", function(data, status) {
+        if (status == "success") {
+            $.post("/findGame", data, function(data, status) {
+                console.log("Data: " + data + "\nStatus: " + status)
+                subscribeToGame()
+            })
+        }
+    })
 }
 
-function isGameReady() {
-    fetch(isGameReadyUrl)
-        .then(function(response) {
-            console.log("IS GAME READY")
-            if (response.status === 200) {
-                clearInterval(anotherId)
+function subscribeToGame() {
+    $.get("/getGameSessionId", function(data, status) {
+        if (status == "success") {
+            if (data != null) {
+                gameSessionId = data
+                console.log("GameSessionId: " + gameSessionId)
+                stompClient.subscribe(data)
+            } else {
+                console.log("gameSessionId = null")
             }
-        })
+        }
+    })
 }
 
 function getMousePosition(canvas, evt) {
@@ -185,28 +183,6 @@ function preloadAllImages(callback) {
     })
 }
 
-function getGameSession() {
-    let game = fetch(gameUrl)
-    let player = fetch(playerInfoUrl)
-    let promises = [game, player]
-    game.then(function(response) {
-        return response.json()
-    }).then(function(data) {
-        gameSession = data
-    })
-
-    player.then(function(response) {
-        return response.json()
-    }).then(function(data) {
-        playerInfo = data
-    })
-
-    if (typeof playerInfo != "undefined") {
-        side = playerInfo.side
-        clearInterval(infoId)
-    }
-}
-
 function drawPieces() {
     let ctx = document.getElementById('pieces').getContext('2d')
     fetch(playerInfoUrl)
@@ -239,7 +215,7 @@ function drawPieces() {
         }
         //console.log(gameSession.checkMate)
         if (gameSession.checkMate == true) {
-            console.log("CHECKMATE")
+            //console.log("CHECKMATE")
             document.getElementById("text").innerText = "CHECKMATE"
         }
         if (playerInfo.side == "WHITE") {
