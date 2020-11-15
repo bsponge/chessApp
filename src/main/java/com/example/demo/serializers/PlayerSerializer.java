@@ -14,6 +14,7 @@ public class PlayerSerializer implements JsonSerializer<Player> {
     @Override
     public JsonElement serialize(Player player, Type type, JsonSerializationContext jsonSerializationContext) {
         JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("msgType", 2);
         jsonObject.addProperty("id", player.getId().toString());
         jsonObject.addProperty("gameSessionId", player.getGameSessionId() == null ? "null" : player.getGameSessionId().toString());
         if (player.getSide() == null) {

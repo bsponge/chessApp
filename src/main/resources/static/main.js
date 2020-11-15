@@ -1,16 +1,45 @@
-
 let size = 80
 let images = new Map()
+let uuid
+let side
 
+let gameSession = []
+for (let i = 0; i < 8; ++i) {
+    gameSession[i] = []
+    for (let j = 0; j < 8; ++j) {
+        gameSession[i][j] = null
+    }
+}
+for (let i = 0; i < 8; ++i) {
+    gameSession[i][1] = "PAWNWHITE.png"
+    gameSession[i][6] = "PAWNBLACK.png"
+}
+gameSession[0][0] = "ROOKWHITE.png"
+gameSession[1][0] = "KNIGHTWHITE.png"
+gameSession[2][0] = "BISHOPWHITE.png"
+gameSession[3][0] = "QUEENWHITE.png"
+gameSession[4][0] = "KINGWHITE.png"
+gameSession[5][0] = "BISHOPWHITE.png"
+gameSession[6][0] = "KNIGHTWHITE.png"
+gameSession[7][0] = "ROOKWHITE.png"
+gameSession[0][7] = "ROOKBLACK.png"
+gameSession[1][7] = "KNIGHTBLACK.png"
+gameSession[2][7] = "BISHOPBLACK.png"
+gameSession[3][7] = "QUEENBLACK.png"
+gameSession[4][7] = "KINGBLACK.png"
+gameSession[5][7] = "BISHOPBLACK.png"
+gameSession[6][7] = "KNIGHTBLACK.png"
+gameSession[7][7] = "ROOKBLACK.png"
 let domain = window.location.href
-let gameSessionId = "";
-//console.log(domain)
+let gameSessionId = ""
 let sock = new SockJS(domain + "chess")
 let stompClient = Stomp.over(sock)
 stompClient.connect({}, function(frame) {
     console.log("connected: " + frame)
 })
 let playerInfo;
+let positions = []
+
 
 let list = `BISHOPBLACK.png
 BISHOPWHITE.png
@@ -29,22 +58,18 @@ let timeElement = document.getElementById("panel")
 ctx.canvas.width = size * 8
 ctx.canvas.height = size * 8
 
-preloadAllImages(drawPieces)
+class Piece {
 
-//const id = setInterval(findGame, 300)
-let refreshInterval = 10
+}
 
-
-//let chessboard = setInterval(drawChessboard, 300)
-
-//setInterval(drawPieces, 100)
-//setInterval(timeDisplay, refreshInterval)
+preloadAllImages()
 
 function sendMsg() {
     $.get("/getGameSessionId", function(data, status) {
         if (status == "success") {
             if (data != null && data != "") {
                 let move = {
+                    msgType: 1,
                     id: data,
                     move: {
                         fromX: 0,
@@ -64,8 +89,21 @@ function sendMsg() {
 
 function findGame() {
     $.get("/getId", function(data, status) {
+        uuid = data
         if (status == "success") {
             $.post("/findGame", data, function(data, status) {
+                if (data != null && typeof data != "undefined") {
+                    data = JSON.parse(data)
+                    if (uuid == data.whiteSide) {
+                        side = "white"
+                        console.log(side)
+                    } else {
+                        side = "black"
+                        console.log(side)
+                    }
+                    drawChessboard()
+                }
+                console.log(uuid)
                 subscribeToGame()
             })
         }
@@ -73,7 +111,23 @@ function findGame() {
 }
 
 function onReceivedMessage(msg) {
+    if (msg != null && typeof msg != "undefined") {
+        msg = JSON.parse(msg.body)
+        console.log(msg)
+        switch (msg.msgType) {
+            case 0:
 
+                break
+            case 1:
+                console.log("move message received")
+                drawPieces(msg)
+                break
+            case 2:
+                console.log("player info received")
+                break
+            default:
+        }
+    }
 }
 
 function subscribeToGame() {
@@ -105,53 +159,34 @@ function drawChessboard() {
     const dark = "#E8C15F"
     let bool = true
 
-    /*
-    player.then(function(response) {
-        return response.json()
-    }).then(function(data) {
-        playerInfo = data
-    })
-     */
     $.get("/getInfo", function(data, status) {
         if (status == "success") {
             if (data != null && typeof data != "undefined") {
                 playerInfo = data
             }
         }
-        })
-    if (playerInfo.side != null) {
-        //console.log(playerInfo.side)
-        if (playerInfo.side == "white") {
-            bool = true
-        } else {
-            bool = false
-        }
-        for (let i = 0; i < 8; i++) {
-            for (let j = 0; j < 8; j++) {
-                if (bool) {
-                    ctx.fillStyle = light
-                } else {
-                    ctx.fillStyle = dark
-                }
-                ctx.fillRect(j * size, i * size, size, size)
-                bool = !bool
+    })
+    for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+            if (bool) {
+                ctx.fillStyle = light
+            } else {
+                ctx.fillStyle = dark
             }
+            ctx.fillRect(j * size, i * size, size, size)
             bool = !bool
         }
-    }
-
-    if (playerInfo.side != null) {
-        clearInterval(chessboard)
+        bool = !bool
     }
 }
 
-function preloadAllImages(callback) {
+function preloadAllImages() {
     for (let name of list) {
         let img = new Image()
         images.set(name, img)
         img.src= name
         img.onload = function() {
-            callback()
+
         }
     }
     let ctx = document.getElementById('pieces').getContext('2d')
@@ -163,66 +198,45 @@ function preloadAllImages(callback) {
             positions.pop()
             positions.pop()
         }
-        let player = fetch(playerInfoUrl)
 
+
+        /*
         player.then(function(response) {
             return response.json()
         }).then(function(data) {
             playerInfo = data
         })
-        positions.push([Math.floor(mousePosition.y / size), Math.floor(mousePosition.x / size)])
+         */
+        positions.push([Math.floor(mousePosition.x / size), Math.floor(mousePosition.y / size)])
 
         let res = []
         res.pop()
 
-        if (typeof playerInfo.side !== "undefined" && playerInfo.side == "WHITE" && positions.length == 2) {
-            fetch(moveUrl
-                + positions[0][0] + "/"
-                + positions[0][1] + "/"
-                + positions[1][0] + "/"
-                + positions[1][1])
-                .then(function(response) {
-                    res.push(response.status)
-                    if (response.status == 200) {
-                        drawPieces(true)
-                    } else if (response.data == "MATE") {
-                        document.body.style.backgroundColor = "red"
-                    }
-                })
-        } else if (typeof playerInfo.side !== "undefined" && playerInfo.side == "BLACK" && positions.length == 2) {
-            fetch(moveUrl
-                + ( 7 - positions[0][0]) + "/"
-                + (positions[0][1]) + "/"
-                + ( 7 - positions[1][0]) + "/"
-                + (positions[1][1]))
-                .then(function(response) {
-                    res.push(response.status)
-                    if (response.status == 200) {
-                        drawPieces(true)
-                    }
-                })
+        if (typeof side !== "undefined" && side == "white" && positions.length == 2) {
+            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:7-positions[0][1], toX:positions[1][0], toY:7-positions[1][1], fromPiece: null, toPiece: null, doable: false}}
+            console.log(obj)
+            stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
+        } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
+            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:positions[0][1], toX:positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}}
+            console.log(obj)
+            stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         }
     })
 }
 
-function drawPieces() {
+function drawPieces(data) {
     let ctx = document.getElementById('pieces').getContext('2d')
-    fetch(playerInfoUrl)
-        .then(function(response) {
-            return response.json()
-        }).then(function(data) {
-        playerInfo = data
-    })
-    fetch(gameUrl)
-        .then(function(response) {
-            return response.json()
-        }).then(function(data) {
-        gameSession = data
-    })
-    if (typeof gameSession.pieces != "undefined" && gameSession.pieces != null && playerInfo.side != null && gameSession != null) {
+
+    console.log("DRAW PIECE: " + data)
+    data = data.move
+    gameSession[data.toX][data.toY] = gameSession[data.fromX][data.fromY]
+    gameSession[data.fromX][data.fromY] = null
+    console.log("Drawing pieces")
+
+    if (gameSession != null) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        //console.log(gameSession.checkMate)
-        if (playerInfo.side == "WHITE" && gameSession.checkOnWhite == true) {
+        /*
+        if (side == "white" && gameSession.checkOnWhite == true) {
             document.body.style.backgroundColor = "red"
             document.getElementById("text").innerText = "CHECK"
         } else if (playerInfo.side == "BLACK" && gameSession.checkOnBlack == true) {
@@ -235,22 +249,23 @@ function drawPieces() {
             document.body.style.backgroundColor = "black"
             document.getElementById("text").innerText = ""
         }
+         */
         //console.log(gameSession.checkMate)
-        if (gameSession.checkMate == true) {
-            //console.log("CHECKMATE")
-            document.getElementById("text").innerText = "CHECKMATE"
-        }
-        if (playerInfo.side == "WHITE") {
-            for (let piece of gameSession.pieces) {
-                    if (piece.type != null) {
-                        ctx.drawImage(images.get(piece.type + piece.color + ".png"), piece.y * size, piece.x * size, size, size)
+        if (side === "white") {
+            for (let i = 0; i < 8; ++i) {
+                for (let j = 0; j < 8; ++j) {
+                    if (gameSession[i][j] != null) {
+                        ctx.drawImage(images.get(gameSession[i][j]), i * size, (7-j) * size, size, size)
                     }
+                }
             }
         } else {
-            for (let piece of gameSession.pieces) {
-                    if (piece.type !== null) {
-                        ctx.drawImage(images.get(piece.type + piece.color + ".png"), piece.y * size, (7 - piece.x) * size, size, size)
+            for (let i = 0; i < 8; ++i) {
+                for (let j = 0; j < 8; ++j) {
+                    if (gameSession[i][j] != null) {
+                        ctx.drawImage(images.get(gameSession[i][j]), i * size, j * size, size, size)
                     }
+                }
             }
         }
     }
