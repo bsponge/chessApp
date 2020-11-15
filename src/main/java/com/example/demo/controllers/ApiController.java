@@ -1,8 +1,7 @@
 package com.example.demo.controllers;
 
 import com.example.demo.move.MoveMessage;
-import com.example.demo.move.MoveMessageSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.demo.serializers.MoveMessageSerializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.myProject.GameSession;

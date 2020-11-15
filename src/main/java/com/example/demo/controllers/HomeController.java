@@ -1,5 +1,8 @@
 package com.example.demo.controllers;
 
+import com.example.demo.serializers.PlayerSerializer;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.myProject.GameSession;
 import com.myProject.Player;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +20,9 @@ import java.util.UUID;
 public class HomeController {
     private Hashtable<UUID, Player> players;
     private Hashtable<UUID, GameSession> gameSessions;
+    private static final Gson playerSerializer = new GsonBuilder()
+            .registerTypeAdapter(Player.class, new PlayerSerializer())
+            .create();
 
     @ModelAttribute("Player")
     public Player player() {
@@ -43,6 +49,12 @@ public class HomeController {
     @ResponseBody
     public String getId(@ModelAttribute("Player") Player player) {
         return player.getId().toString();
+    }
+
+    @GetMapping("getInfo")
+    @ResponseBody
+    public String getInfo(@ModelAttribute("Player") Player player) {
+        return playerSerializer.toJson(player);
     }
 
     @GetMapping("/getGameSessionId")

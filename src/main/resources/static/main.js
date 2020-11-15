@@ -10,6 +10,7 @@ let stompClient = Stomp.over(sock)
 stompClient.connect({}, function(frame) {
     console.log("connected: " + frame)
 })
+let playerInfo;
 
 let list = `BISHOPBLACK.png
 BISHOPWHITE.png
@@ -71,12 +72,16 @@ function findGame() {
     })
 }
 
+function onReceivedMessage(msg) {
+
+}
+
 function subscribeToGame() {
     $.get("/getGameSessionId", function(data, status) {
         if (status == "success") {
             if (data != null) {
                 gameSessionId = data
-                stompClient.subscribe("/topic/messages/" + gameSessionId)
+                stompClient.subscribe("/topic/messages/" + gameSessionId, onReceivedMessage)
             } else {
                 console.log("gameSessionId = null")
             }
@@ -99,16 +104,24 @@ function drawChessboard() {
     const light = "#EFE9CF"
     const dark = "#E8C15F"
     let bool = true
-    let player = fetch(playerInfoUrl)
 
+    /*
     player.then(function(response) {
         return response.json()
     }).then(function(data) {
         playerInfo = data
     })
+     */
+    $.get("/getInfo", function(data, status) {
+        if (status == "success") {
+            if (data != null && typeof data != "undefined") {
+                playerInfo = data
+            }
+        }
+        })
     if (playerInfo.side != null) {
         //console.log(playerInfo.side)
-        if (playerInfo.side == "WHITE") {
+        if (playerInfo.side == "white") {
             bool = true
         } else {
             bool = false
