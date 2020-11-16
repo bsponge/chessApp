@@ -1,6 +1,6 @@
 package com.example.demo.serializers;
 
-import com.example.demo.move.MoveMessage;
+import com.example.demo.moveMessage.MoveMessage;
 import com.google.gson.*;
 import com.myProject.Move;
 

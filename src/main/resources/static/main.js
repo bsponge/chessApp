@@ -199,25 +199,17 @@ function preloadAllImages() {
             positions.pop()
         }
 
-
-        /*
-        player.then(function(response) {
-            return response.json()
-        }).then(function(data) {
-            playerInfo = data
-        })
-         */
         positions.push([Math.floor(mousePosition.x / size), Math.floor(mousePosition.y / size)])
 
         let res = []
         res.pop()
 
         if (typeof side !== "undefined" && side == "white" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:7-positions[0][1], toX:positions[1][0], toY:7-positions[1][1], fromPiece: null, toPiece: null, doable: false}}
+            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:7-positions[0][1], toX:positions[1][0], toY:7-positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:positions[0][1], toX:positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}}
+            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:positions[0][1], toX:positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         }
@@ -235,22 +227,6 @@ function drawPieces(data) {
 
     if (gameSession != null) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        /*
-        if (side == "white" && gameSession.checkOnWhite == true) {
-            document.body.style.backgroundColor = "red"
-            document.getElementById("text").innerText = "CHECK"
-        } else if (playerInfo.side == "BLACK" && gameSession.checkOnBlack == true) {
-            document.body.style.backgroundColor = "red"
-            document.getElementById("text").innerText = "CHECK"
-        } else if (playerInfo.side == "WHITE" && gameSession.checkOnWhite == false) {
-            document.body.style.backgroundColor = "black"
-            document.getElementById("text").innerText = ""
-        } else if (playerInfo.side == "BLACK" && gameSession.checkOnWhite == false) {
-            document.body.style.backgroundColor = "black"
-            document.getElementById("text").innerText = ""
-        }
-         */
-        //console.log(gameSession.checkMate)
         if (side === "white") {
             for (let i = 0; i < 8; ++i) {
                 for (let j = 0; j < 8; ++j) {

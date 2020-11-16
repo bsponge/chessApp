@@ -1,6 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.move.MoveMessage;
+import com.example.demo.moveMessage.MoveMessage;
 import com.example.demo.serializers.MoveMessageSerializer;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
@@ -10,7 +10,6 @@ import com.myProject.Move;
 import com.myProject.Piece;
 import com.myProject.Player;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -20,7 +19,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import javax.print.attribute.standard.Sides;
 import java.util.Hashtable;
 import java.util.Queue;
 import java.util.UUID;
@@ -38,7 +36,10 @@ public class ApiController {
     private Hashtable<UUID, Player> players;
 
     @Autowired
-    public ApiController(SimpMessagingTemplate simpMessagingTemplate,@Qualifier("gameSessions") Hashtable gameSessions, Queue<GameSession> gameQueue, @Qualifier("players") Hashtable<UUID, Player> players) {
+    public ApiController(SimpMessagingTemplate simpMessagingTemplate,
+                         @Qualifier("gameSessions") Hashtable gameSessions,
+                         @Qualifier("gameQueue") Queue<GameSession> gameQueue,
+                         @Qualifier("players") Hashtable<UUID, Player> players) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.gameSessions = gameSessions;
         this.gameQueue = gameQueue;
@@ -108,7 +109,16 @@ public class ApiController {
         if (moveMessage.getGameUuid() != null) {
             if (moveMessage != null) {
                 GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
-                if (gameSession != null && !gameSession.move(moveMessage.getMove()).equals(GameSession.WRONG_MOVE)) {
+                Piece.Color color = null;
+                if (gameSession != null && gameSession.getChessboard()[moveMessage.getMove().getFromX()][moveMessage.getMove().getFromY()] != null) {
+                    color = gameSession.getChessboard()[moveMessage.getMove().getFromX()][moveMessage.getMove().getFromY()].getColor();
+                }
+                Piece.Color turnColor = gameSession.getTurn();
+                Move moveMade = gameSession.move(moveMessage.getMove());
+                if (gameSession != null && turnColor == color && !moveMade.equals(GameSession.WRONG_MOVE)) {
+                    log.info("LEGAL MOVE");
+                    gameSession.changeTurn(moveMessage.getMove());
+                    moveMessage.setChecksAndMates(gameSession);
                     simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
                 }
             }
