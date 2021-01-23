@@ -212,7 +212,7 @@ function preloadAllImages() {
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:positions[0][1], toX:positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
+            let obj = {msgType:1,id: gameSessionId, move:{fromX:7-positions[0][0],fromY:positions[0][1], toX:7-positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         }
@@ -245,7 +245,7 @@ function drawPieces(data) {
             for (let i = 0; i < 8; ++i) {
                 for (let j = 0; j < 8; ++j) {
                     if (gameSession[i][j] != null) {
-                        ctx.drawImage(images.get(gameSession[i][j]), i * size, j * size, size, size)
+                        ctx.drawImage(images.get(gameSession[i][j]), (7 - i) * size, j * size, size, size)
                     }
                 }
             }
