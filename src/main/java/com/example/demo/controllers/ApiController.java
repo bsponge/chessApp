@@ -1,18 +1,16 @@
 package com.example.demo.controllers;
 
-import chessLib.Color;
-import chessLib.GameSession;
-import chessLib.Move;
-import chessLib.Player;
+import chessLib.*;
 import com.example.demo.moveMessage.MoveMessage;
 import com.example.demo.serializers.MoveMessageSerializer;
+import com.example.demo.serializers.PiecesSerializer;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.web.servlet.server.Session;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -53,10 +51,40 @@ public class ApiController {
         log.info(gameSessions.toString());
     }
 
+    @GetMapping("/reload")
+    @ResponseBody
+    public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+        if (!playerId.equals("none")) {
+            try {
+                log.info("RECEIVED PLAYER ID: " + playerId);
+                UUID id = UUID.fromString(playerId);
+                Player player = players.get(id);
+                log.info("1");
+                if (player != null) {
+                    if (gameSessions.containsKey(player.getGameSessionId())) {
+                        Gson gson = new GsonBuilder()
+                                .registerTypeAdapter(Piece[][].class, new PiecesSerializer())
+                                .create();
+                        try {
+                            return gson.toJson(gameSessions.get(player.getGameSessionId()).getChessboard());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }
+                return "null";
+            } catch (Exception e) {
+                return "null";
+            }
+        } else {
+            return "null";
+        }
+    }
+
     @PostMapping("/findGame")
-    public ResponseEntity<String> findGame(@RequestBody String id) {
-        if (id != null) {
-            id = id.substring(0, id.length()-1);
+    public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String id) {
+        if (!id.equals("none")) {
             UUID playerId;
             try {
                 playerId = UUID.fromString(id);

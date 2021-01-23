@@ -30,7 +30,9 @@ gameSession[4][7] = "KINGBLACK.png"
 gameSession[5][7] = "BISHOPBLACK.png"
 gameSession[6][7] = "KNIGHTBLACK.png"
 gameSession[7][7] = "ROOKBLACK.png"
-let domain = window.location.href
+
+
+let domain = window.location.href.slice(-1) != "#" ? window.location.href : window.location.href.slice(0, -1)
 let gameSessionId = ""
 let sock = new SockJS(domain + "chess")
 let stompClient = Stomp.over(sock)
@@ -58,11 +60,35 @@ let timeElement = document.getElementById("panel")
 ctx.canvas.width = size * 8
 ctx.canvas.height = size * 8
 
-class Piece {
-
-}
 
 preloadAllImages()
+
+$.get("/reload", function(data, status) {
+    if (data != null) {
+        data = JSON.parse(data).pieces
+        console.log("przyszlo")
+        console.log(data)
+        for (let i = 0; i < 8; ++i) {
+            for (let j = 0; j < 8; ++j) {
+                gameSession[i][j] = null
+            }
+        }
+        for (let i = 0; i < data.length; ++i) {
+            if (data[i] != null) {
+                gameSession[data[i].x][data[i].y] = data[i].type + data[i].color + ".png"
+            }
+        }
+        $.get("/getInfo", function(data, status) {
+            if (data != null) {
+                data = JSON.parse(data)
+                side = data.side
+            }
+        })
+        console.log("brefore drawing pieces")
+        console.log(gameSession)
+    }
+})
+
 
 function sendMsg() {
     $.get("/getGameSessionId", function(data, status) {
@@ -148,6 +174,7 @@ function subscribeToGame() {
             if (data != null) {
                 gameSessionId = data
                 stompClient.subscribe("/topic/messages/" + gameSessionId, onReceivedMessage)
+                drawPieces()
             } else {
                 console.log("gameSessionId = null")
             }
@@ -171,13 +198,6 @@ function drawChessboard() {
     const dark = "#E8C15F"
     let bool = true
 
-    $.get("/getInfo", function(data, status) {
-        if (status == "success") {
-            if (data != null && typeof data != "undefined") {
-                playerInfo = data
-            }
-        }
-    })
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
             if (bool) {
@@ -230,9 +250,6 @@ function preloadAllImages() {
 
 function drawPieces(data) {
     let ctx = document.getElementById('pieces').getContext('2d')
-
-    console.log("DRAW PIECE: " + data)
-
     if (data != null) {
         if (data.castle) {
             if (data.move.toX == 2) {
@@ -247,12 +264,11 @@ function drawPieces(data) {
 
         gameSession[data.toX][data.toY] = gameSession[data.fromX][data.fromY]
         gameSession[data.fromX][data.fromY] = null
-        console.log("Drawing pieces")
     }
 
     if (gameSession != null) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        if (side === "white") {
+        if (side == "white") {
             for (let i = 0; i < 8; ++i) {
                 for (let j = 0; j < 8; ++j) {
                     if (gameSession[i][j] != null) {
