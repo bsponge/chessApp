@@ -1,7 +1,8 @@
 package com.example.demo.moveMessage;
 
-import com.myProject.GameSession;
-import com.myProject.Move;
+import chessLib.Color;
+import chessLib.GameSession;
+import chessLib.Move;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -29,9 +30,9 @@ public class MoveMessage {
     }
 
     public void setChecksAndMates(GameSession gameSession) {
-        this.isMateOnWhite = gameSession.isMateOnWhite();
-        this.isMateOnBlack = gameSession.isMateOnBlack();
-        this.isCheckOnWhite = gameSession.isCheckOnWhite();
-        this.isCheckOnBlack = gameSession.isCheckOnBlack();
+        this.isMateOnWhite = gameSession.isMate(Color.WHITE);
+        this.isMateOnBlack = gameSession.isMate(Color.BLACK);
+        this.isCheckOnWhite = gameSession.isCheck(Color.WHITE);
+        this.isCheckOnBlack = gameSession.isCheck(Color.BLACK);
     }
 }

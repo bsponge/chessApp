@@ -1,8 +1,8 @@
 package com.example.demo.serializers;
 
+import chessLib.Move;
 import com.example.demo.moveMessage.MoveMessage;
 import com.google.gson.*;
-import com.myProject.Move;
 
 import java.lang.reflect.Type;
 import java.util.UUID;

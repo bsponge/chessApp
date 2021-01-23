@@ -15,7 +15,7 @@ public class SidesMessage {
         if (blackSide == null) {
             return String.format("{\"msgType\":%d,\"whiteSide\":\"%s\",\"blackSide\":null}", 2, whiteSide);
         } else {
-            return String.format("{\"msgType\":%d,\"whiteSide\":\"%s\",\"blackSide\":null}", 2, whiteSide, blackSide);
+            return String.format("{\"msgType\":%d,\"whiteSide\":\"%s\",\"blackSide\":\"%s\"}", 2, whiteSide, blackSide);
         }
     }
 }

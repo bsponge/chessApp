@@ -1,9 +1,9 @@
-let size = 80
-let images = new Map()
-let uuid
-let side
+let size = 80           // size of a square
+let images = new Map()  // map for images
+let uuid                // player UUID
+let side                // side (white or black)
 
-let gameSession = []
+let gameSession = []    // 2d array representing pieces on chessboard
 for (let i = 0; i < 8; ++i) {
     gameSession[i] = []
     for (let j = 0; j < 8; ++j) {
@@ -81,7 +81,7 @@ function sendMsg() {
                         doable: false
                     }
                 }
-                stompClient.send("/app/chess/" + data, {}, JSON.stringify(move))
+                //stompClient.send("/app/chess/" + data, {}, JSON.stringify(move))
             }
         }
     })
@@ -103,6 +103,7 @@ function findGame() {
                     }
                     drawChessboard()
                 }
+                drawPieces()
                 console.log(uuid)
                 subscribeToGame()
             })
@@ -127,6 +128,8 @@ function onReceivedMessage(msg) {
                 break
             default:
         }
+    } else {
+        console.log("onReceivedMessage error")
     }
 }
 
@@ -220,10 +223,13 @@ function drawPieces(data) {
     let ctx = document.getElementById('pieces').getContext('2d')
 
     console.log("DRAW PIECE: " + data)
-    data = data.move
-    gameSession[data.toX][data.toY] = gameSession[data.fromX][data.fromY]
-    gameSession[data.fromX][data.fromY] = null
-    console.log("Drawing pieces")
+
+    if (data != null) {
+        data = data.move
+        gameSession[data.toX][data.toY] = gameSession[data.fromX][data.fromY]
+        gameSession[data.fromX][data.fromY] = null
+        console.log("Drawing pieces")
+    }
 
     if (gameSession != null) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)

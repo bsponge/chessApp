@@ -1,14 +1,15 @@
 package com.example.demo.configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.myProject.GameSession;
-import com.myProject.Player;
+import chessLib.GameSession;
+import chessLib.Player;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 
 @Configuration
@@ -19,12 +20,12 @@ public class GameConfiguration {
     }
 
     @Bean("gameSessions")
-    public Hashtable<UUID, GameSession> gameSession() {
-        return new Hashtable<>();
+    public Map<UUID, GameSession> gameSessions() {
+        return new ConcurrentHashMap<>();
     }
 
     @Bean("players")
-    public Hashtable<UUID, Player> players() {
-        return new Hashtable<>();
+    public Map<UUID, Player> players() {
+        return new ConcurrentHashMap<>();
     }
 }

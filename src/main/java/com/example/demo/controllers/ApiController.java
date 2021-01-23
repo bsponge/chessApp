@@ -1,14 +1,14 @@
 package com.example.demo.controllers;
 
+import chessLib.Color;
+import chessLib.GameSession;
+import chessLib.Move;
+import chessLib.Player;
 import com.example.demo.moveMessage.MoveMessage;
 import com.example.demo.serializers.MoveMessageSerializer;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.myProject.GameSession;
-import com.myProject.Move;
-import com.myProject.Piece;
-import com.myProject.Player;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,7 +19,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Hashtable;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -31,15 +31,15 @@ public class ApiController {
     private static final ResponseEntity<Void> RESPONSE_BAD = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 
     private SimpMessagingTemplate simpMessagingTemplate;
-    private Hashtable<UUID, GameSession> gameSessions;
+    private Map<UUID, GameSession> gameSessions;
     private Queue<GameSession> gameQueue;
-    private Hashtable<UUID, Player> players;
+    private Map<UUID, Player> players;
 
     @Autowired
     public ApiController(SimpMessagingTemplate simpMessagingTemplate,
-                         @Qualifier("gameSessions") Hashtable gameSessions,
+                         @Qualifier("gameSessions") Map<UUID, GameSession> gameSessions,
                          @Qualifier("gameQueue") Queue<GameSession> gameQueue,
-                         @Qualifier("players") Hashtable<UUID, Player> players) {
+                         @Qualifier("players") Map<UUID, Player> players) {
         this.simpMessagingTemplate = simpMessagingTemplate;
         this.gameSessions = gameSessions;
         this.gameQueue = gameQueue;
@@ -62,27 +62,27 @@ public class ApiController {
                 if (players.containsKey(playerId)) {
                     Player player = players.get(playerId);
                     GameSession gameSession;
-                    SidesMessage sidesMessage = null;
-                    if (gameQueue.isEmpty()) {
+                    SidesMessage sidesMessage;
+                    if (gameQueue.isEmpty()) {      // queue of games is empty
                         gameSession = new GameSession(player);
                         gameQueue.add(gameSession);
-                        player.setSide(Piece.Color.WHITE);
+                        player.setColor(Color.WHITE);
                         player.setGameSessionId(gameSession.getId());
-                        sidesMessage = new SidesMessage(gameSession.getPlayerWhite().getId().toString(), null);
+                        sidesMessage = new SidesMessage(gameSession.getWhitePlayer().getId().toString(), null);
                         return new ResponseEntity<>(sidesMessage.toString(), HttpStatus.OK);
-                    } else {
+                    } else {                        // queue of games is not empty
                         gameSession = gameQueue.poll();
-                        gameSession.setPlayerBlack(player);
-                        player.setSide(Piece.Color.BLACK);
+                        gameSession.setBlackPlayer(player);
+                        player.setColor(Color.BLACK);
                         player.setGameSessionId(gameSession.getId());
                         gameSessions.put(gameSession.getId(), gameSession);
                         sidesMessage = new SidesMessage(
                                 gameSession
-                                        .getPlayerWhite()
+                                        .getWhitePlayer()
                                         .getId()
                                         .toString(),
                                 gameSession
-                                        .getPlayerBlack()
+                                        .getBlackPlayer()
                                         .getId()
                                         .toString());
                         simpMessagingTemplate
@@ -107,21 +107,14 @@ public class ApiController {
                 .create();
         MoveMessage moveMessage = gson.fromJson(move, MoveMessage.class);
         if (moveMessage.getGameUuid() != null) {
-            if (moveMessage != null) {
-                GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
-                Piece.Color color = null;
-                if (gameSession != null && gameSession.getChessboard()[moveMessage.getMove().getFromX()][moveMessage.getMove().getFromY()] != null) {
-                    color = gameSession.getChessboard()[moveMessage.getMove().getFromX()][moveMessage.getMove().getFromY()].getColor();
-                }
-                Piece.Color turnColor = gameSession.getTurn();
-                Move moveMade = gameSession.move(moveMessage.getMove());
-                if (gameSession != null && turnColor == color && !moveMade.equals(GameSession.WRONG_MOVE)) {
-                    log.info("LEGAL MOVE");
-                    gameSession.changeTurn(moveMessage.getMove());
-                    moveMessage.setChecksAndMates(gameSession);
-                    simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
-                }
+            GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
+            Move m = moveMessage.getMove();
+            if (gameSession != null && m != null && gameSession.move(m.getFromX(), m.getFromY(), m.getToX(), m.getToY(), null)) {
+                log.info("LEGAL MOVE");
+                moveMessage.setChecksAndMates(gameSession);
+                simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
             }
+
         }
     }
 
