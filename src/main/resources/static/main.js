@@ -122,6 +122,15 @@ function onReceivedMessage(msg) {
             case 1:
                 console.log("move message received")
                 drawPieces(msg)
+                if (side == "white" && msg.checkOnWhtie) {
+                    document.body.style.backgroundColor = "red";
+                } else if (side == "white") {
+                    document.body.style.backgroundColor = "black";
+                } else if (side == "black" && msg.checkOnBlack) {
+                    document.body.style.backgroundColor = "red";
+                } else {
+                    document.body.style.backgroundColor = "black";
+                }
                 break
             case 2:
                 console.log("player info received")
@@ -225,7 +234,17 @@ function drawPieces(data) {
     console.log("DRAW PIECE: " + data)
 
     if (data != null) {
+        if (data.castle) {
+            if (data.move.toX == 2) {
+                gameSession[3][data.move.fromY] = gameSession[0][data.move.fromY]
+                gameSession[0][data.move.fromY] = null
+            } else {
+                gameSession[5][data.move.fromY] = gameSession[7][data.move.fromY]
+                gameSession[7][data.move.fromY] = null
+            }
+        }
         data = data.move
+
         gameSession[data.toX][data.toY] = gameSession[data.fromX][data.fromY]
         gameSession[data.fromX][data.fromY] = null
         console.log("Drawing pieces")

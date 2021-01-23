@@ -12,6 +12,7 @@ import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.web.servlet.server.Session;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -100,8 +101,10 @@ public class ApiController {
     }
 
     @MessageMapping("/chess/{toGameSession}")
-    public void sendMoveMessage(@DestinationVariable String toGameSession, String move) {
+    public void sendMoveMessage(@DestinationVariable String toGameSession, String move, @CookieValue(value = "playerId", defaultValue = "none") String playerId) {
         log.info(move);
+        log.info("PlayerId from Cookie");
+        log.info(playerId);
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(MoveMessage.class, new MoveMessageSerializer())
                 .create();
@@ -111,6 +114,9 @@ public class ApiController {
             Move m = moveMessage.getMove();
             if (gameSession != null && m != null && gameSession.move(m.getFromX(), m.getFromY(), m.getToX(), m.getToY(), null)) {
                 log.info("LEGAL MOVE");
+                if ((m.getFromX() == 4 && m.getToX() == 6) || (m.getFromX() == 4 && m.getToX() == 2)) {
+                    moveMessage.setCastle(true);
+                }
                 moveMessage.setChecksAndMates(gameSession);
                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
             }
@@ -118,4 +124,8 @@ public class ApiController {
         }
     }
 
+    @MessageMapping("/chess/{toGameSession}/undo")
+    public void undoLastMove(@DestinationVariable String toGameSession, @CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+
+    }
 }
