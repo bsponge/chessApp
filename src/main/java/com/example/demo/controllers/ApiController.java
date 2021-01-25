@@ -8,7 +8,6 @@ import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -26,9 +25,6 @@ import java.util.UUID;
 @RestController
 @CrossOrigin
 public class ApiController {
-    private static final ResponseEntity<Void> RESPONSE_OK = new ResponseEntity<>(HttpStatus.OK);
-    private static final ResponseEntity<Void> RESPONSE_BAD = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-
     private SimpMessagingTemplate simpMessagingTemplate;
     private Map<UUID, GameSession> gameSessions;
     private Queue<GameSession> gameQueue;
