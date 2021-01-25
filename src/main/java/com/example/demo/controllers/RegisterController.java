@@ -2,6 +2,7 @@ package com.example.demo.controllers;
 
 import com.example.demo.account.Account;
 import com.example.demo.repository.AccountRepository;
+import com.example.demo.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -11,11 +12,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Controller
 @Slf4j
 public class RegisterController {
-    private AccountRepository accountRepository;
+    private AccountService accountService;
 
     @Autowired
-    public RegisterController(AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
+    public RegisterController(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @GetMapping("/register")
@@ -27,7 +28,6 @@ public class RegisterController {
     public void postRegister(String username, String email, String password) {
         log.info(username);
         log.info(email);
-        log.info(password);
-        accountRepository.save(new Account(username, password, email));
+        accountService.registerNewUser(username, password, email);
     }
 }
