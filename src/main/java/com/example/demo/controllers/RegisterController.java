@@ -1,7 +1,5 @@
 package com.example.demo.controllers;
 
-import com.example.demo.account.Account;
-import com.example.demo.repository.AccountRepository;
 import com.example.demo.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
