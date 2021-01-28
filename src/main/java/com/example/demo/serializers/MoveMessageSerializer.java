@@ -1,5 +1,6 @@
 package com.example.demo.serializers;
 
+import chessLib.Color;
 import chessLib.Move;
 import com.example.demo.moveMessage.MoveMessage;
 import com.google.gson.*;

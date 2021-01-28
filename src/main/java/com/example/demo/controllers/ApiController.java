@@ -129,7 +129,9 @@ public class ApiController {
             if (moveMessage.isUndo()) {
                 if (gameSession.getMovesHistory().size() > 0) {
                     Move m = gameSession.getMovesHistory().get(gameSession.getMovesHistory().size() - 1);
-                    m = new Move(m.getToX(), m.getToY(), m.getFromX(), m.getFromY());
+                    m = new Move(m.getToX(), m.getToY(), m.getFromX(), m.getFromY(), m.getColor(), m.getType(), m.getEnemyColor(), m.getEnemyType());
+                    log.info("Created move");
+                    log.info(m.toString());
                     gameSession.undoLastMove();
                     MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, m);
                     log.info("Undo move");
