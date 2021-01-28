@@ -252,6 +252,20 @@ function preloadAllImages() {
     })
 }
 
+function undoMove() {
+    $.get("/getGameSessionId", function(data, status) {
+        if (data != null && typeof data != "undefined") {
+            let gameId = data
+            $.get("/getId", function(data, status) {
+                if (data != null && typeof data != "undefined") {
+                    let obj = {msgType:1,id: gameId, playerId: data, isUndo:true, move:{fromX:0,fromY:0, toX:0, toY:0, fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
+                    stompClient.send("/app/chess/" + gameId, {}, JSON.stringify(obj))
+                }
+            })
+        }
+    })
+}
+
 function drawPieces(data) {
     let ctx = document.getElementById('pieces').getContext('2d')
     if (data != null) {

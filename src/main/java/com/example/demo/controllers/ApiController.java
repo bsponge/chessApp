@@ -126,18 +126,30 @@ public class ApiController {
         MoveMessage moveMessage = gson.fromJson(move, MoveMessage.class);
         if (moveMessage.getGameUuid() != null) {
             GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
-            Move m = moveMessage.getMove();
-            boolean a = gameSession.getColorTurn() == Color.WHITE ? gameSession.getWhitePlayer().getId().equals(moveMessage.getPlayerUuid()) : Objects.requireNonNull(gameSession).getBlackPlayer().getId().equals(moveMessage.getPlayerUuid());
-            boolean b = gameSession.move(Objects.requireNonNull(m).getFromX(), m.getFromY(), m.getToX(), m.getToY(), null);
-            if (a && b) {
-                if ((m.getFromX() == 4 && m.getToX() == 6) || (m.getFromX() == 4 && m.getToX() == 2)) {
-                    moveMessage.setCastle(true);
+            if (moveMessage.isUndo()) {
+                if (gameSession.getMovesHistory().size() > 0) {
+                    Move m = gameSession.getMovesHistory().get(gameSession.getMovesHistory().size() - 1);
+                    m = new Move(m.getToX(), m.getToY(), m.getFromX(), m.getFromY());
+                    gameSession.undoLastMove();
+                    MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, m);
+                    log.info("Undo move");
+                    simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
                 }
-                log.info("After move");
-                log.info(gameSession.getColorTurn().toString());
-                moveMessage.setChecksAndMates(gameSession);
-                simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
+            } else {
+                Move m = moveMessage.getMove();
+                boolean a = gameSession.getColorTurn() == Color.WHITE ? gameSession.getWhitePlayer().getId().equals(moveMessage.getPlayerUuid()) : Objects.requireNonNull(gameSession).getBlackPlayer().getId().equals(moveMessage.getPlayerUuid());
+                boolean b = gameSession.move(Objects.requireNonNull(m).getFromX(), m.getFromY(), m.getToX(), m.getToY(), null);
+                if (a && b) {
+                    if ((m.getFromX() == 4 && m.getToX() == 6) || (m.getFromX() == 4 && m.getToX() == 2)) {
+                        moveMessage.setCastle(true);
+                    }
+                    log.info("After move");
+                    log.info(gameSession.getColorTurn().toString());
+                    moveMessage.setChecksAndMates(gameSession);
+                    simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
+                }
             }
+
         }
     }
 }
