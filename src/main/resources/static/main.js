@@ -11,28 +11,28 @@ for (let i = 0; i < 8; ++i) {
     }
 }
 for (let i = 0; i < 8; ++i) {
-    gameSession[i][1] = "PAWNWHITE.png"
-    gameSession[i][6] = "PAWNBLACK.png"
+    gameSession[i][1] = "PAWN_WHITE.png"
+    gameSession[i][6] = "PAWN_BLACK.png"
 }
-gameSession[0][0] = "ROOKWHITE.png"
-gameSession[1][0] = "KNIGHTWHITE.png"
-gameSession[2][0] = "BISHOPWHITE.png"
-gameSession[3][0] = "QUEENWHITE.png"
-gameSession[4][0] = "KINGWHITE.png"
-gameSession[5][0] = "BISHOPWHITE.png"
-gameSession[6][0] = "KNIGHTWHITE.png"
-gameSession[7][0] = "ROOKWHITE.png"
-gameSession[0][7] = "ROOKBLACK.png"
-gameSession[1][7] = "KNIGHTBLACK.png"
-gameSession[2][7] = "BISHOPBLACK.png"
-gameSession[3][7] = "QUEENBLACK.png"
-gameSession[4][7] = "KINGBLACK.png"
-gameSession[5][7] = "BISHOPBLACK.png"
-gameSession[6][7] = "KNIGHTBLACK.png"
-gameSession[7][7] = "ROOKBLACK.png"
+gameSession[0][0] = "ROOK_WHITE.png"
+gameSession[1][0] = "KNIGHT_WHITE.png"
+gameSession[2][0] = "BISHOP_WHITE.png"
+gameSession[3][0] = "QUEEN_WHITE.png"
+gameSession[4][0] = "KING_WHITE.png"
+gameSession[5][0] = "BISHOP_WHITE.png"
+gameSession[6][0] = "KNIGHT_WHITE.png"
+gameSession[7][0] = "ROOK_WHITE.png"
+gameSession[0][7] = "ROOK_BLACK.png"
+gameSession[1][7] = "KNIGHT_BLACK.png"
+gameSession[2][7] = "BISHOP_BLACK.png"
+gameSession[3][7] = "QUEEN_BLACK.png"
+gameSession[4][7] = "KING_BLACK.png"
+gameSession[5][7] = "BISHOP_BLACK.png"
+gameSession[6][7] = "KNIGHT_BLACK.png"
+gameSession[7][7] = "ROOK_BLACK.png"
 
 
-let domain = window.location.href.slice(-1) != "#" ? window.location.href : window.location.href.slice(0, -1)
+let domain = window.location.href.slice(-1) !== "#" ? window.location.href : window.location.href.slice(0, -1)
 let gameSessionId = ""
 let sock = new SockJS(domain + "chess")
 let stompClient = Stomp.over(sock)
@@ -43,18 +43,18 @@ let playerInfo;
 let positions = []
 
 
-let list = `BISHOPBLACK.png
-BISHOPWHITE.png
-KINGBLACK.png
-KINGWHITE.png
-KNIGHTBLACK.png
-KNIGHTWHITE.png
-PAWNBLACK.png
-PAWNWHITE.png
-QUEENBLACK.png
-QUEENWHITE.png
-ROOKBLACK.png
-ROOKWHITE.png`.split("\n")
+let list = `BISHOP_BLACK.png
+BISHOP_WHITE.png
+KING_BLACK.png
+KING_WHITE.png
+KNIGHT_BLACK.png
+KNIGHT_WHITE.png
+PAWN_BLACK.png
+PAWN_WHITE.png
+QUEEN_BLACK.png
+QUEEN_WHITE.png
+ROOK_BLACK.png
+ROOK_WHITE.png`.split("\n")
 let ctx = document.getElementById('pieces').getContext('2d')
 let timeElement = document.getElementById("panel")
 ctx.canvas.width = size * 8
@@ -237,13 +237,64 @@ function preloadAllImages() {
         res.pop()
 
         if (typeof side !== "undefined" && side == "white" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:7-positions[0][1], toX:positions[1][0], toY:7-positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
+            let obj = {msgType:1,
+                id: gameSessionId,
+                playerId: uuid,
+                isUndo: false,
+                move:
+                    {fromX: positions[0][0],
+                        fromY: 7-positions[0][1],
+                        toX: positions[1][0],
+                        toY: 7-positions[1][1]},
+                isCheckOnWhite: false,
+                isCheckOnBlack: false,
+                isMateOnWhite: false,
+                isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:7-positions[0][0],fromY:positions[0][1], toX:7-positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
+            let obj = {msgType:1,
+                id: gameSessionId,
+                playerId: uuid,
+                isUndo:false,
+                move:
+                    {fromX:7-positions[0][0],
+                        fromY:positions[0][1],
+                        toX:7-positions[1][0],
+                        toY:positions[1][1]
+                    },
+                isCheckOnWhite: false,
+                isCheckOnBlack: false,
+                isMateOnWhite: false,
+                isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
+        }
+    })
+}
+
+function undoMove() {
+    $.get("/getGameSessionId", function(data, status) {
+        if (data != null && typeof data != "undefined") {
+            let gameId = data
+            $.get("/getId", function(data, status) {
+                if (data != null && typeof data != "undefined") {
+                    let obj = {msgType:1,
+                        id: gameId,
+                        playerId: data,
+                        isUndo:true,
+                        move:
+                            {fromX:0,
+                                fromY:0,
+                                toX:0,
+                                toY:0},
+                        isCheckOnWhite: false,
+                        isCheckOnBlack: false,
+                        isMateOnWhite: false,
+                        isMateOnBlack: false}
+                    stompClient.send("/app/chess/" + gameId, {}, JSON.stringify(obj))
+                }
+            })
         }
     })
 }
@@ -260,10 +311,13 @@ function drawPieces(data) {
                 gameSession[7][data.move.fromY] = null
             }
         }
-        data = data.move
 
-        gameSession[data.toX][data.toY] = gameSession[data.fromX][data.fromY]
-        gameSession[data.fromX][data.fromY] = null
+        gameSession[data.move.toX][data.move.toY] = gameSession[data.move.fromX][data.move.fromY]
+        gameSession[data.move.fromX][data.move.fromY] = null
+
+        if (data.undo && data.move.enemyColor != null && data.move.enemyType != null) {
+            gameSession[data.move.fromX][data.move.fromY] = data.move.enemyType + "_" + data.move.enemyColor + ".png"
+        }
     }
 
     if (gameSession != null) {

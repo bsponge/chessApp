@@ -5,7 +5,6 @@ import chessLib.Player;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
