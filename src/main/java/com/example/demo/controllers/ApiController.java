@@ -4,6 +4,7 @@ import chessLib.*;
 import com.example.demo.moveMessage.MoveMessage;
 import com.example.demo.serializers.MoveMessageSerializer;
 import com.example.demo.serializers.PiecesSerializer;
+import com.example.demo.service.GamesHistoryService;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,13 +31,16 @@ public class ApiController {
     private Map<UUID, GameSession> gameSessions;
     private Queue<GameSession> gameQueue;
     private Map<UUID, Player> players;
+    private GamesHistoryService gamesHistoryService;
 
     @Autowired
     public ApiController(SimpMessagingTemplate simpMessagingTemplate,
+                         GamesHistoryService gamesHistoryService,
                          @Qualifier("gameSessions") Map<UUID, GameSession> gameSessions,
                          @Qualifier("gameQueue") Queue<GameSession> gameQueue,
                          @Qualifier("players") Map<UUID, Player> players) {
         this.simpMessagingTemplate = simpMessagingTemplate;
+        this.gamesHistoryService = gamesHistoryService;
         this.gameSessions = gameSessions;
         this.gameQueue = gameQueue;
         this.players = players;
@@ -134,6 +138,7 @@ public class ApiController {
                     log.info(m.toString());
                     gameSession.undoLastMove();
                     MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, m);
+                    mm.setChecksAndMates(gameSession);
                     log.info("Undo move");
                     simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
                 }
@@ -148,6 +153,12 @@ public class ApiController {
                     log.info("After move");
                     log.info(gameSession.getColorTurn().toString());
                     moveMessage.setChecksAndMates(gameSession);
+                    log.info(Boolean.toString(moveMessage.isMateOnBlack()));
+                    log.info(Boolean.toString(moveMessage.isMateOnWhite()));
+                    if (moveMessage.isMateOnBlack() || moveMessage.isMateOnWhite()) {
+                        log.info("SAVING GAME HISTORY");
+                        gamesHistoryService.saveGameHistory(gameSession);
+                    }
                     simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
                 }
             }

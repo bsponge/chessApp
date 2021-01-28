@@ -39,7 +39,7 @@ public class MoveMessage {
     public void setChecksAndMates(GameSession gameSession) {
         this.isMateOnWhite = gameSession.isMate(Color.WHITE);
         this.isMateOnBlack = gameSession.isMate(Color.BLACK);
-        this.isCheckOnWhite = gameSession.isCheck(Color.WHITE);
-        this.isCheckOnBlack = gameSession.isCheck(Color.BLACK);
+        this.isCheckOnBlack = isMateOnBlack ? true : gameSession.isCheck(Color.BLACK);
+        this.isCheckOnWhite = isMateOnWhite ? true : gameSession.isCheck(Color.WHITE);
     }
 }
