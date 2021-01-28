@@ -1,11 +1,9 @@
 package com.example.demo.controllers;
 
-import chessLib.Color;
-import chessLib.GameSession;
-import chessLib.Move;
-import chessLib.Player;
+import chessLib.*;
 import com.example.demo.moveMessage.MoveMessage;
 import com.example.demo.serializers.MoveMessageSerializer;
+import com.example.demo.serializers.PiecesSerializer;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -27,9 +25,6 @@ import java.util.UUID;
 @RestController
 @CrossOrigin
 public class ApiController {
-    private static final ResponseEntity<Void> RESPONSE_OK = new ResponseEntity<>(HttpStatus.OK);
-    private static final ResponseEntity<Void> RESPONSE_BAD = new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-
     private SimpMessagingTemplate simpMessagingTemplate;
     private Map<UUID, GameSession> gameSessions;
     private Queue<GameSession> gameQueue;
@@ -52,10 +47,40 @@ public class ApiController {
         log.info(gameSessions.toString());
     }
 
+    @GetMapping("/reload")
+    @ResponseBody
+    public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+        if (!playerId.equals("none")) {
+            try {
+                log.info("RECEIVED PLAYER ID: " + playerId);
+                UUID id = UUID.fromString(playerId);
+                Player player = players.get(id);
+                log.info("1");
+                if (player != null) {
+                    if (gameSessions.containsKey(player.getGameSessionId())) {
+                        Gson gson = new GsonBuilder()
+                                .registerTypeAdapter(Piece[][].class, new PiecesSerializer())
+                                .create();
+                        try {
+                            return gson.toJson(gameSessions.get(player.getGameSessionId()).getChessboard());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }
+                return "null";
+            } catch (Exception e) {
+                return "null";
+            }
+        } else {
+            return "null";
+        }
+    }
+
     @PostMapping("/findGame")
-    public ResponseEntity<String> findGame(@RequestBody String id) {
-        if (id != null) {
-            id = id.substring(0, id.length()-1);
+    public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String id) {
+        if (!id.equals("none")) {
             UUID playerId;
             try {
                 playerId = UUID.fromString(id);
@@ -100,8 +125,10 @@ public class ApiController {
     }
 
     @MessageMapping("/chess/{toGameSession}")
-    public void sendMoveMessage(@DestinationVariable String toGameSession, String move) {
+    public void sendMoveMessage(@DestinationVariable String toGameSession, String move, @CookieValue(value = "playerId", defaultValue = "none") String playerId) {
         log.info(move);
+        log.info("PlayerId from Cookie");
+        log.info(playerId);
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(MoveMessage.class, new MoveMessageSerializer())
                 .create();
@@ -111,6 +138,9 @@ public class ApiController {
             Move m = moveMessage.getMove();
             if (gameSession != null && m != null && gameSession.move(m.getFromX(), m.getFromY(), m.getToX(), m.getToY(), null)) {
                 log.info("LEGAL MOVE");
+                if ((m.getFromX() == 4 && m.getToX() == 6) || (m.getFromX() == 4 && m.getToX() == 2)) {
+                    moveMessage.setCastle(true);
+                }
                 moveMessage.setChecksAndMates(gameSession);
                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
             }
@@ -118,4 +148,8 @@ public class ApiController {
         }
     }
 
+    @MessageMapping("/chess/{toGameSession}/undo")
+    public void undoLastMove(@DestinationVariable String toGameSession, @CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+
+    }
 }

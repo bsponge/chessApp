@@ -18,6 +18,7 @@ public class MoveMessage {
     private boolean isCheckOnBlack;
     private boolean isMateOnWhite;
     private boolean isMateOnBlack;
+    private boolean isCastle;
 
     public MoveMessage(UUID gameUuid, Move move) {
         this.gameUuid = gameUuid;
