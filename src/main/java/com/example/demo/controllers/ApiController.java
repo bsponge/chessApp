@@ -18,6 +18,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -41,21 +42,13 @@ public class ApiController {
         this.players = players;
     }
 
-    @GetMapping("/print")
-    public void print() {
-        log.info(gameQueue.toString());
-        log.info(gameSessions.toString());
-    }
-
     @GetMapping("/reload")
     @ResponseBody
     public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
         if (!playerId.equals("none")) {
             try {
-                log.info("RECEIVED PLAYER ID: " + playerId);
                 UUID id = UUID.fromString(playerId);
                 Player player = players.get(id);
-                log.info("1");
                 if (player != null) {
                     if (gameSessions.containsKey(player.getGameSessionId())) {
                         Gson gson = new GsonBuilder()
@@ -125,10 +118,8 @@ public class ApiController {
     }
 
     @MessageMapping("/chess/{toGameSession}")
-    public void sendMoveMessage(@DestinationVariable String toGameSession, String move, @CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+    public void sendMoveMessage(@DestinationVariable String toGameSession, String move) {
         log.info(move);
-        log.info("PlayerId from Cookie");
-        log.info(playerId);
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(MoveMessage.class, new MoveMessageSerializer())
                 .create();
@@ -136,20 +127,17 @@ public class ApiController {
         if (moveMessage.getGameUuid() != null) {
             GameSession gameSession = gameSessions.get(moveMessage.getGameUuid());
             Move m = moveMessage.getMove();
-            if (gameSession != null && m != null && gameSession.move(m.getFromX(), m.getFromY(), m.getToX(), m.getToY(), null)) {
-                log.info("LEGAL MOVE");
+            boolean a = gameSession.getColorTurn() == Color.WHITE ? gameSession.getWhitePlayer().getId().equals(moveMessage.getPlayerUuid()) : Objects.requireNonNull(gameSession).getBlackPlayer().getId().equals(moveMessage.getPlayerUuid());
+            boolean b = gameSession.move(Objects.requireNonNull(m).getFromX(), m.getFromY(), m.getToX(), m.getToY(), null);
+            if (a && b) {
                 if ((m.getFromX() == 4 && m.getToX() == 6) || (m.getFromX() == 4 && m.getToX() == 2)) {
                     moveMessage.setCastle(true);
                 }
+                log.info("After move");
+                log.info(gameSession.getColorTurn().toString());
                 moveMessage.setChecksAndMates(gameSession);
                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
             }
-
         }
-    }
-
-    @MessageMapping("/chess/{toGameSession}/undo")
-    public void undoLastMove(@DestinationVariable String toGameSession, @CookieValue(value = "playerId", defaultValue = "none") String playerId) {
-
     }
 }

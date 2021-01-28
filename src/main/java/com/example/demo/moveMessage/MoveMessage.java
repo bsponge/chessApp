@@ -13,20 +13,26 @@ import java.util.UUID;
 public class MoveMessage {
     private final int msgType = 1;
     private UUID gameUuid;
+    private UUID playerUuid;
     private Move move;
+    private boolean isUndo;
     private boolean isCheckOnWhite;
     private boolean isCheckOnBlack;
     private boolean isMateOnWhite;
     private boolean isMateOnBlack;
     private boolean isCastle;
 
-    public MoveMessage(UUID gameUuid, Move move) {
+    public MoveMessage(UUID gameUuid, UUID playerUuid, boolean isUndo, Move move) {
         this.gameUuid = gameUuid;
+        this.playerUuid = playerUuid;
+        this.isUndo = isUndo;
         this.move = move;
     }
 
-    public MoveMessage(String gameUuid, Move move) {
+    public MoveMessage(String gameUuid, String playerUuid, boolean isUndo, Move move) {
         this.gameUuid = UUID.fromString(gameUuid);
+        this.playerUuid = UUID.fromString(playerUuid);
+        this.isUndo = isUndo;
         this.move = move;
     }
 

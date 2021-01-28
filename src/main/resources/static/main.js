@@ -161,6 +161,10 @@ function onReceivedMessage(msg) {
             case 2:
                 console.log("player info received")
                 break
+            case 3:
+                console.log("Undo move received")
+                drawPieces(msg)
+                break;
             default:
         }
     } else {
@@ -237,11 +241,11 @@ function preloadAllImages() {
         res.pop()
 
         if (typeof side !== "undefined" && side == "white" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:positions[0][0],fromY:7-positions[0][1], toX:positions[1][0], toY:7-positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
+            let obj = {msgType:1,id: gameSessionId, playerId: uuid, isUndo:false, move:{fromX:positions[0][0],fromY:7-positions[0][1], toX:positions[1][0], toY:7-positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
-            let obj = {msgType:1,id: gameSessionId, move:{fromX:7-positions[0][0],fromY:positions[0][1], toX:7-positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
+            let obj = {msgType:1,id: gameSessionId, playerId: uuid, isUndo:false, move:{fromX:7-positions[0][0],fromY:positions[0][1], toX:7-positions[1][0], toY:positions[1][1], fromPiece: null, toPiece: null, doable: false}, isCheckOnWhite: false, isCheckOnBlack: false, isMateOnWhite: false, isMateOnBlack: false}
             console.log(obj)
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         }
