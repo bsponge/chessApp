@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Controller
 @Slf4j
 public class RegisterController {
-    private AccountService accountService;
+    private final AccountService accountService;
 
     @Autowired
     public RegisterController(AccountService accountService) {

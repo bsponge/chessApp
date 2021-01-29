@@ -16,7 +16,7 @@ public class PlayerSerializer implements JsonSerializer<Player> {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("msgType", 2);
         jsonObject.addProperty("id", player.getId().toString());
-        jsonObject.addProperty("gameSessionId", player.getId() == null ? "null" : player.getId().toString());
+        jsonObject.addProperty("gameSessionId", player.getGameSessionId() == null ? "null" : player.getGameSessionId().toString());
         if (player.getColor() == null) {
             jsonObject.addProperty("side", "null");
         } else {

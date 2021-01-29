@@ -9,24 +9,11 @@ public class PiecesSerializer implements JsonSerializer<Piece[][]> {
 
     @Override
     public JsonElement serialize(Piece[][] pieces, Type type, JsonSerializationContext jsonSerializationContext) {
-        /*
         JsonObject jsonObject = new JsonObject();
         JsonArray jsonArray = new JsonArray();
-        for (int i = 0; i < pieces.length; ++i) {
-            JsonArray array = new JsonArray();
-            for (int j = 0; j < pieces[i].length; ++j) {
-                array.add(serializePiece(pieces[i][j]));
-            }
-            jsonArray.add(array);
-        }
-        jsonObject.add("pieces", jsonArray);
-        return jsonObject;
-         */
-        JsonObject jsonObject = new JsonObject();
-        JsonArray jsonArray = new JsonArray();
-        for (int i = 0; i < pieces.length; ++i) {
-            for (int j = 0; j < pieces[i].length; ++j) {
-                jsonArray.add(serializePiece(pieces[i][j]));
+        for (Piece[] piece : pieces) {
+            for (Piece value : piece) {
+                jsonArray.add(serializePiece(value));
             }
         }
         jsonObject.add("pieces", jsonArray);

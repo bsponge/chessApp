@@ -3,6 +3,7 @@ package com.example.demo.moveMessage;
 import chessLib.Color;
 import chessLib.GameSession;
 import chessLib.Move;
+import chessLib.Type;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class MoveMessage {
+    public final static MoveMessage WRONG_MOVE_MESSAGE = new MoveMessage();
+
     private final int msgType = 1;
     private UUID gameUuid;
     private UUID playerUuid;
@@ -21,12 +24,14 @@ public class MoveMessage {
     private boolean isMateOnWhite;
     private boolean isMateOnBlack;
     private boolean isCastle;
+    private Type promotionType;
 
-    public MoveMessage(UUID gameUuid, UUID playerUuid, boolean isUndo, Move move) {
+    public MoveMessage(UUID gameUuid, UUID playerUuid, boolean isUndo, Move move, Type promotionType) {
         this.gameUuid = gameUuid;
         this.playerUuid = playerUuid;
         this.isUndo = isUndo;
         this.move = move;
+        this.promotionType = promotionType;
     }
 
     public MoveMessage(String gameUuid, String playerUuid, boolean isUndo, Move move) {
@@ -39,7 +44,7 @@ public class MoveMessage {
     public void setChecksAndMates(GameSession gameSession) {
         this.isMateOnWhite = gameSession.isMate(Color.WHITE);
         this.isMateOnBlack = gameSession.isMate(Color.BLACK);
-        this.isCheckOnWhite = gameSession.isCheck(Color.WHITE);
-        this.isCheckOnBlack = gameSession.isCheck(Color.BLACK);
+        this.isCheckOnBlack = isMateOnBlack || gameSession.isCheck(Color.BLACK);
+        this.isCheckOnWhite = isMateOnWhite || gameSession.isCheck(Color.WHITE);
     }
 }

@@ -1,6 +1,5 @@
 package com.example.demo.controllers;
 
-import chessLib.GameSession;
 import chessLib.Player;
 import com.example.demo.serializers.PlayerSerializer;
 import com.google.gson.Gson;
@@ -21,16 +20,14 @@ import java.util.UUID;
 @Slf4j
 @Controller
 public class HomeController {
-    private Map<UUID, Player> players;
-    private Map<UUID, GameSession> gameSessions;
+    private final Map<UUID, Player> players;
     private static final Gson playerSerializer = new GsonBuilder()
             .registerTypeAdapter(Player.class, new PlayerSerializer())
             .create();
 
     @Autowired
-    public HomeController(@Qualifier("players") Map<UUID, Player> players,@Qualifier("gameSessions") Map<UUID, GameSession> gameSessions) {
+    public HomeController(@Qualifier("players") Map<UUID, Player> players) {
         this.players = players;
-        this.gameSessions = gameSessions;
     }
 
     @GetMapping("/")
@@ -42,18 +39,20 @@ public class HomeController {
             players.put(player.getId(), player);
             log.info(player.toString());
             response.addCookie(cookie);
-        }
-        try {
-            UUID id = UUID.fromString(playerId);
-            if (!players.containsKey(id)) {
-                Player player = new Player();
-                player.setId(id);
-                players.put(id, player);
-                log.info("New player " + player.toString());
+        } else {
+            try {
+                UUID id = UUID.fromString(playerId);
+                if (!players.containsKey(id)) {
+                    Player player = new Player();
+                    player.setId(id);
+                    players.put(id, player);
+                    log.info("New player " + player.toString());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-
         }
+
         return "home";
     }
 
@@ -102,10 +101,5 @@ public class HomeController {
             }
         }
 
-    }
-
-    @GetMapping("/greet")
-    public String socketTest() {
-        return "socketTest";
     }
 }
