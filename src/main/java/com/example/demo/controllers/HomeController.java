@@ -1,6 +1,5 @@
 package com.example.demo.controllers;
 
-import chessLib.GameSession;
 import chessLib.Player;
 import com.example.demo.serializers.PlayerSerializer;
 import com.google.gson.Gson;
@@ -27,7 +26,7 @@ public class HomeController {
             .create();
 
     @Autowired
-    public HomeController(@Qualifier("players") Map<UUID, Player> players,@Qualifier("gameSessions") Map<UUID, GameSession> gameSessions) {
+    public HomeController(@Qualifier("players") Map<UUID, Player> players) {
         this.players = players;
     }
 
@@ -50,7 +49,7 @@ public class HomeController {
                 log.info("New player " + player.toString());
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return "home";
     }

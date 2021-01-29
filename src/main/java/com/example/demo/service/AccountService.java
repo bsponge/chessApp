@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class AccountService {
-    private PasswordEncoder passwordEncoder;
-    private AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AccountRepository accountRepository;
 
     @Autowired
     public AccountService(AccountRepository accountRepository, PasswordEncoder passwordEncoder) {
@@ -20,9 +20,7 @@ public class AccountService {
     public void registerNewUser(String login, String password, String email) {
         boolean loginExists = accountRepository.existsAccountByLogin(login);
         boolean emailExists = accountRepository.existsAccountByEmail(email);
-        if (loginExists || emailExists) {
-            return;
-        } else {
+        if (!loginExists || !emailExists) {
             Account account = new Account();
             account.setLogin(login);
             account.setEmail(email);
