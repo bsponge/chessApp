@@ -20,12 +20,19 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /*
     TODO:
         - undoMove accept
         - game time
         - extract websocket endpoints to external class
+        - extract gson serializers from methods
+ */
+
+/**
+ * ApiController is rest controller for client's game moves communication with server
+ * @author js
  */
 
 @Slf4j
@@ -51,26 +58,39 @@ public class ApiController {
         this.players = players;
     }
 
+    /**
+     * Returns json String representing Piece[] of active GameSession
+     * @param playerId
+     * @return json String representing Piece[] of active GameSession
+     */
     @GetMapping("/reload")
     @ResponseBody
     public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
-        if (!playerId.equals("none")) {
+        if (!playerId.equals("none")) {     // player has playerId attribute in cookie
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(Piece[][].class, new PiecesSerializer())
                     .create();
 
-            try {
+            try {                           // if player has active game return json String representing array of pieces
                 return Optional
                         .of(playerId)
                         .map(UUID::fromString)
                         .map(players::get)
-                        .map(player -> gameSessions.get(player.getGameSessionId()))
-                        .map(gameSession -> gson.toJson(gameSession.getChessboard()))
+                        .map(Player::getGameSessionId)
+                        .map(gameSessions::get)
+                        .map(gameSession -> Arrays.stream(gameSession.getChessboard())
+                                .flatMap(Arrays::stream)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList()))
+                        .map(gson::toJson)
                         .orElse("null");
             } catch (Exception e) {
+                e.printStackTrace();
+                log.info("Exception");
                 return "null";
             }
         } else {
+            log.info("bad cookie");
             return "null";
         }
     }

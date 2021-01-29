@@ -66,8 +66,13 @@ ctx.canvas.height = size * 8
 preloadAllImages()
 
 $.get("/reload", function(data, status) {
-    if (data != null && data.pieces != null) {
-        data = JSON.parse(data).pieces
+    if (data != null && data !== "null") {
+        console.log(data.length)
+        console.log("Pieces received:")
+        console.log(typeof data)
+        console.log(data)
+        data = JSON.parse(data)
+        console.log(data)
         for (let i = 0; i < 8; ++i) {
             for (let j = 0; j < 8; ++j) {
                 gameSession[i][j] = null

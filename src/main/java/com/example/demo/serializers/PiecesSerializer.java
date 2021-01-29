@@ -2,25 +2,25 @@ package com.example.demo.serializers;
 
 import chessLib.Piece;
 import com.google.gson.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Type;
+import java.util.List;
 
-public class PiecesSerializer implements JsonSerializer<Piece[][]> {
+public class PiecesSerializer implements JsonSerializer<List<Piece>> {
 
     @Override
-    public JsonElement serialize(Piece[][] pieces, Type type, JsonSerializationContext jsonSerializationContext) {
+    public JsonElement serialize(List<Piece> pieces, Type type, JsonSerializationContext jsonSerializationContext) {
         JsonObject jsonObject = new JsonObject();
         JsonArray jsonArray = new JsonArray();
-        for (Piece[] piece : pieces) {
-            for (Piece value : piece) {
-                jsonArray.add(serializePiece(value));
-            }
+        for (Piece piece : pieces) {
+            jsonArray.add(serializePiece(piece));
         }
         jsonObject.add("pieces", jsonArray);
         return jsonObject;
     }
 
-    private JsonElement serializePiece(Piece piece) {
+    private JsonObject serializePiece(Piece piece) {
         if (piece == null) {
             return null;
         } else {
