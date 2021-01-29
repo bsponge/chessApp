@@ -42,7 +42,11 @@ public class MoveMessageSerializer implements JsonDeserializer<MoveMessage> {
                                         .map(move -> move.get("toY"))
                                         .map(JsonElement::getAsInt)
                                         .orElseThrow()
-                        )
+                        ),
+                        Optional.ofNullable(jsonObject.get("promotionType"))
+                                .map(JsonElement::getAsString)
+                                .map(chessLib.Type::valueOf)
+                                .orElse(null)
                         )
                 ).orElse(MoveMessage.WRONG_MOVE_MESSAGE);
         /*

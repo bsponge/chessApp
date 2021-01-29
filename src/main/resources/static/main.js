@@ -3,6 +3,9 @@ let images = new Map()  // map for images
 let uuid                // player UUID
 let side                // side (white or black)
 
+let isPromotionMenuOn = false
+let promotionChoicePosition = []
+
 let gameSession = []    // 2d array representing pieces on chessboard
 for (let i = 0; i < 8; ++i) {
     gameSession[i] = []
@@ -31,7 +34,6 @@ gameSession[5][7] = "BISHOP_BLACK.png"
 gameSession[6][7] = "KNIGHT_BLACK.png"
 gameSession[7][7] = "ROOK_BLACK.png"
 
-
 let domain = window.location.href.slice(-1) !== "#" ? window.location.href : window.location.href.slice(0, -1)
 let gameSessionId = ""
 let sock = new SockJS(domain + "chess")
@@ -40,7 +42,6 @@ let stompClient = Stomp.over(sock)
 stompClient.connect({}, function(frame) {
     console.log("connected: " + frame)
 })
-let playerInfo;
 let positions = []
 
 
@@ -65,10 +66,8 @@ ctx.canvas.height = size * 8
 preloadAllImages()
 
 $.get("/reload", function(data, status) {
-    if (data != null) {
+    if (data != null && data.pieces != null) {
         data = JSON.parse(data).pieces
-        console.log("przyszlo")
-        console.log(data)
         for (let i = 0; i < 8; ++i) {
             for (let j = 0; j < 8; ++j) {
                 gameSession[i][j] = null
@@ -86,12 +85,8 @@ $.get("/reload", function(data, status) {
                 })
                 subscribeToGame()
                 data = JSON.parse(data)
-                console.log("get info")
-                console.log(data)
                 side = data.side
-                console.log("brefore drawing pieces")
                 drawPieces(null)
-                console.log(gameSession)
             }
         })
     }
@@ -100,11 +95,11 @@ $.get("/reload", function(data, status) {
 function findGame() {
     $.get("/getId", function(data, status) {
         uuid = data
-        if (status == "success") {
+        if (status === "success") {
             $.post("/findGame", data, function(data, status) {
                 if (data != null && typeof data != "undefined") {
                     data = JSON.parse(data)
-                    if (uuid == data.whiteSide) {
+                    if (uuid === data.whiteSide) {
                         side = "white"
                         console.log(side)
                     } else {
@@ -130,20 +125,18 @@ function onReceivedMessage(msg) {
 
                 break
             case 1:
-                console.log("move message received")
                 drawPieces(msg)
-                if (side == "white" && msg.checkOnWhtie) {
+                if (side === "white" && msg.checkOnWhtie) {
                     document.body.style.backgroundColor = "red";
-                } else if (side == "white") {
+                } else if (side === "white") {
                     document.body.style.backgroundColor = "black";
-                } else if (side == "black" && msg.checkOnBlack) {
+                } else if (side === "black" && msg.checkOnBlack) {
                     document.body.style.backgroundColor = "red";
                 } else {
                     document.body.style.backgroundColor = "black";
                 }
                 break
             case 2:
-                console.log("player info received")
                 break
             default:
         }
@@ -154,13 +147,11 @@ function onReceivedMessage(msg) {
 
 function subscribeToGame() {
     $.get("/getGameSessionId", function(data, status) {
-        if (status == "success") {
+        if (status === "success") {
             if (data != null) {
                 gameSessionId = data
                 stompClient.subscribe("/topic/messages/" + gameSessionId, onReceivedMessage)
                 drawPieces()
-            } else {
-                console.log("gameSessionId = null")
             }
         }
     })
@@ -174,13 +165,14 @@ function getMousePosition(canvas, evt) {
     }
 }
 
-function drawChessboard() {
+function drawChessboard(brightness = 100) {
     let ctx = document.getElementById('chessboard').getContext('2d')
     ctx.canvas.width = size * 8
     ctx.canvas.height = size * 8
     const light = "#EFE9CF"
     const dark = "#E8C15F"
     let bool = true
+    console.log("Drawing chessboard")
 
     for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
@@ -189,10 +181,31 @@ function drawChessboard() {
             } else {
                 ctx.fillStyle = dark
             }
+            ctx.filter = `brightness(${brightness}%)`
             ctx.fillRect(j * size, i * size, size, size)
             bool = !bool
         }
         bool = !bool
+    }
+}
+
+function displayPromotionMenu(x, y) {
+    drawChessboard(40)
+    drawPieces(null, 40)
+    let ctx = document.getElementById('pieces').getContext('2d')
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+    if (side === "white") {
+        ctx.filter = 'brightness(100%)'
+        ctx.drawImage(images.get("QUEEN_WHITE.png"), x * size, (7 - y) * size, size, size)
+        ctx.drawImage(images.get("ROOK_WHITE.png"), x * size, (7 - y + 1) * size, size, size)
+        ctx.drawImage(images.get("KNIGHT_WHITE.png"), x * size, (7 - y + 2) * size, size, size)
+        ctx.drawImage(images.get("BISHOP_WHITE.png"), x * size, (7 - y + 3) * size, size, size)
+    } else {
+        ctx.filter = 'brightness(100%)'
+        ctx.drawImage(images.get("QUEEN_BLACK.png"), (7 - x) * size, y * size, size, size)
+        ctx.drawImage(images.get("ROOK_BLACK.png"), (7 - x) * size, (y + 1) * size, size, size)
+        ctx.drawImage(images.get("KNIGHT_BLACK.png"), (7 - x) * size, (y + 2) * size, size, size)
+        ctx.drawImage(images.get("BISHOP_BLACK.png"), (7 - x) * size, (y + 3) * size, size, size)
     }
 }
 
@@ -209,52 +222,129 @@ function preloadAllImages() {
     ctx.canvas.width = size * 8
     ctx.canvas.height = size * 8
     let c = document.getElementById('pieces').addEventListener('click', function(evt) {
-        let mousePosition = getMousePosition(c, evt)
-        if (positions.length == 2) {
-            positions.pop()
-            positions.pop()
+        let promotion
+        if (!isPromotionMenuOn) {
+            let mousePosition = getMousePosition(c, evt)
+            if (positions.length === 2) {
+                positions.pop()
+                positions.pop()
+            }
+            positions.push([Math.floor(mousePosition.x / size), Math.floor(mousePosition.y / size)])
+            if (side === "white" && positions.length === 2) {
+                console.log("1.")
+                console.log(gameSession[positions[0][0]][7-positions[0][1]] !== null)
+                console.log("2.")
+                console.log(gameSession[positions[0][0]][7-positions[0][1]].includes("PAWN"))
+                console.log("3.")
+                console.log(7-positions[1][1] === 7)
+                if (gameSession[positions[0][0]][7-positions[0][1]] !== null
+                    && gameSession[positions[0][0]][7-positions[0][1]].includes("PAWN")
+                    && 7 - positions[1][1] === 7) {
+                    isPromotionMenuOn = true;
+                    displayPromotionMenu(positions[1][0], 7 - positions[1][1])
+                    return
+                }
+                let obj = {msgType:1,
+                    id: gameSessionId,
+                    playerId: uuid,
+                    isUndo: false,
+                    move:
+                        {   fromX: positions[0][0],
+                            fromY: 7-positions[0][1],
+                            toX: positions[1][0],
+                            toY: 7-positions[1][1]
+                        },
+                }
+                stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
+            } else if (side === "black" && positions.length === 2) {
+                if (gameSession[7-positions[0][0]][positions[0][1]] !== null
+                    && gameSession[7-positions[0][0]][positions[0][1]].includes("PAWN")
+                    && positions[1][1] === 0) {
+                    isPromotionMenuOn = true;
+                    displayPromotionMenu(7 - positions[1][0], positions[1][1])
+                    return
+                }
+                let obj = {msgType:1,
+                    id: gameSessionId,
+                    playerId: uuid,
+                    isUndo:false,
+                    move:
+                        {   fromX:7-positions[0][0],
+                            fromY:positions[0][1],
+                            toX:7-positions[1][0],
+                            toY:positions[1][1]
+                        },
+                }
+                stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
+            }
+        } else {
+            let mousePosition = getMousePosition(c, evt)
+            promotionChoicePosition.push([Math.floor(mousePosition.x / size), Math.floor(mousePosition.y / size)])
+            if (Math.floor(mousePosition.x / size) === positions[1][0]) {
+                if (side === "white") {
+                    switch (Math.floor(mousePosition.y / size)) {
+                        case 0:
+                            promotion = "QUEEN"
+                            break
+                        case 1:
+                            promotion = "ROOK"
+                            break
+                        case 2:
+                            promotion = "KNIGHT"
+                            break
+                        case 3:
+                            promotion = "BISHOP"
+                            break
+                        default:
+                            return
+                    }
+                    let obj = {msgType:1,
+                        id: gameSessionId,
+                        playerId: uuid,
+                        isUndo: false,
+                        move:
+                            {   fromX: positions[0][0],
+                                fromY: 7-positions[0][1],
+                                toX: positions[1][0],
+                                toY: 7-positions[1][1]
+                            },
+                        promotionType: promotion
+                    }
+                    stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
+                } else {
+                    switch (Math.floor(mousePosition.y / size)) {
+                        case 0:
+                            promotion = "QUEEN"
+                            break
+                        case 1:
+                            promotion = "ROOK"
+                            break
+                        case 2:
+                            promotion = "KNIGHT"
+                            break
+                        case 3:
+                            promotion = "BISHOP"
+                    }
+                    let obj = {msgType:1,
+                        id: gameSessionId,
+                        playerId: uuid,
+                        isUndo:false,
+                        move:
+                            {   fromX:7-positions[0][0],
+                                fromY:positions[0][1],
+                                toX:7-positions[1][0],
+                                toY:positions[1][1]
+                            },
+                        promotionType: promotion
+                    }
+                    stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
+                }
+            }
+            isPromotionMenuOn = false
+            drawChessboard()
+            drawPieces(null)
         }
 
-        positions.push([Math.floor(mousePosition.x / size), Math.floor(mousePosition.y / size)])
-
-        let res = []
-        res.pop()
-
-        if (typeof side !== "undefined" && side == "white" && positions.length == 2) {
-            let obj = {msgType:1,
-                id: gameSessionId,
-                playerId: uuid,
-                isUndo: false,
-                move:
-                    {fromX: positions[0][0],
-                        fromY: 7-positions[0][1],
-                        toX: positions[1][0],
-                        toY: 7-positions[1][1]},
-                isCheckOnWhite: false,
-                isCheckOnBlack: false,
-                isMateOnWhite: false,
-                isMateOnBlack: false}
-            console.log(obj)
-            console.log("print send msg")
-            stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
-        } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
-            let obj = {msgType:1,
-                id: gameSessionId,
-                playerId: uuid,
-                isUndo:false,
-                move:
-                    {fromX:7-positions[0][0],
-                        fromY:positions[0][1],
-                        toX:7-positions[1][0],
-                        toY:positions[1][1]
-                    },
-                isCheckOnWhite: false,
-                isCheckOnBlack: false,
-                isMateOnWhite: false,
-                isMateOnBlack: false}
-            console.log(obj)
-            stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
-        }
     })
 }
 
@@ -284,11 +374,11 @@ function undoMove() {
     })
 }
 
-function drawPieces(data) {
+function drawPieces(data, brightness = 100) {
     let ctx = document.getElementById('pieces').getContext('2d')
     if (data != null) {
         if (data.castle) {
-            if (data.move.toX == 2) {
+            if (data.move.toX === 2) {
                 gameSession[3][data.move.fromY] = gameSession[0][data.move.fromY]
                 gameSession[0][data.move.fromY] = null
             } else {
@@ -300,6 +390,14 @@ function drawPieces(data) {
         gameSession[data.move.toX][data.move.toY] = gameSession[data.move.fromX][data.move.fromY]
         gameSession[data.move.fromX][data.move.fromY] = null
 
+        if (data.promotionType != null) {
+            if (gameSession[data.move.toX][data.move.toY].includes("WHITE")) {
+                gameSession[data.move.toX][data.move.toY] = data.promotionType + "_" + "WHITE.png"
+            } else {
+                gameSession[data.move.toX][data.move.toY] = data.promotionType + "_" + "BLACK.png"
+            }
+        }
+
         if (data.undo && data.move.enemyColor != null && data.move.enemyType != null) {
             gameSession[data.move.fromX][data.move.fromY] = data.move.enemyType + "_" + data.move.enemyColor + ".png"
         }
@@ -307,10 +405,11 @@ function drawPieces(data) {
 
     if (gameSession != null) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        if (side == "white") {
+        if (side === "white") {
             for (let i = 0; i < 8; ++i) {
                 for (let j = 0; j < 8; ++j) {
                     if (gameSession[i][j] != null) {
+                        ctx.filter = `brightness(${brightness}%)`
                         ctx.drawImage(images.get(gameSession[i][j]), i * size, (7-j) * size, size, size)
                     }
                 }
@@ -319,6 +418,7 @@ function drawPieces(data) {
             for (let i = 0; i < 8; ++i) {
                 for (let j = 0; j < 8; ++j) {
                     if (gameSession[i][j] != null) {
+                        ctx.filter = `brightness(${brightness}%)`
                         ctx.drawImage(images.get(gameSession[i][j]), (7 - i) * size, j * size, size, size)
                     }
                 }

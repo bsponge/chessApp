@@ -21,11 +21,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-/*
-    TODO:
-        - refactor sendMoveMessage
- */
-
 @Slf4j
 @RestController
 @CrossOrigin
@@ -167,9 +162,16 @@ public class ApiController {
                         .ifPresent(gameSession -> {
                             if (gameSession.getMovesHistory().size() > 0) {
                                 Move lastMove = gameSession.getLastMove();
-                                lastMove = new Move(lastMove.getToX(), lastMove.getToY(), lastMove.getFromX(), lastMove.getFromY(), lastMove.getColor(), lastMove.getType(), lastMove.getEnemyColor(), lastMove.getEnemyType());
+                                lastMove = new Move(lastMove.getToX(),
+                                        lastMove.getToY(),
+                                        lastMove.getFromX(),
+                                        lastMove.getFromY(),
+                                        lastMove.getColor(),
+                                        lastMove.getType(),
+                                        lastMove.getEnemyColor(),
+                                        lastMove.getEnemyType());
                                 gameSession.undoLastMove();
-                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, lastMove);
+                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, lastMove, null);
                                 mm.setChecksAndMates(gameSession);
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
                             }
@@ -185,7 +187,7 @@ public class ApiController {
                                     .map(Player::getId)
                                     .map(player -> player.equals(moveMessage.getPlayerUuid()))
                                     .orElse(false);
-                            boolean b = gameSession.move(mv.getFromX(), mv.getFromY(), mv.getToX(), mv.getToY(), null);
+                            boolean b = gameSession.move(mv.getFromX(), mv.getFromY(), mv.getToX(), mv.getToY(), moveMessage.getPromotionType());
                             if (a && b) {
                                 if ((mv.getFromX() == 4 && mv.getToX() == 6) || (mv.getFromX() == 4 && mv.getToX() == 2)) {
                                     moveMessage.setCastle(true);
@@ -194,6 +196,7 @@ public class ApiController {
                                 if (moveMessage.isMateOnBlack() || moveMessage.isMateOnWhite()) {
                                     gamesHistoryService.saveGameHistory(gameSession);
                                 }
+                                log.info(moveMessage.toString());
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
                             }
                         });

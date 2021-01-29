@@ -39,18 +39,20 @@ public class HomeController {
             players.put(player.getId(), player);
             log.info(player.toString());
             response.addCookie(cookie);
-        }
-        try {
-            UUID id = UUID.fromString(playerId);
-            if (!players.containsKey(id)) {
-                Player player = new Player();
-                player.setId(id);
-                players.put(id, player);
-                log.info("New player " + player.toString());
+        } else {
+            try {
+                UUID id = UUID.fromString(playerId);
+                if (!players.containsKey(id)) {
+                    Player player = new Player();
+                    player.setId(id);
+                    players.put(id, player);
+                    log.info("New player " + player.toString());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+
         return "home";
     }
 
@@ -99,10 +101,5 @@ public class HomeController {
             }
         }
 
-    }
-
-    @GetMapping("/greet")
-    public String socketTest() {
-        return "socketTest";
     }
 }
