@@ -5,7 +5,6 @@ import chessLib.Move;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.util.List;
 import java.util.UUID;

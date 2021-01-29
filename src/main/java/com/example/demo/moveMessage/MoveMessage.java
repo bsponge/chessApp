@@ -11,6 +11,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 public class MoveMessage {
+    public final static MoveMessage WRONG_MOVE_MESSAGE = new MoveMessage();
+
     private final int msgType = 1;
     private UUID gameUuid;
     private UUID playerUuid;
@@ -39,7 +41,7 @@ public class MoveMessage {
     public void setChecksAndMates(GameSession gameSession) {
         this.isMateOnWhite = gameSession.isMate(Color.WHITE);
         this.isMateOnBlack = gameSession.isMate(Color.BLACK);
-        this.isCheckOnBlack = isMateOnBlack ? true : gameSession.isCheck(Color.BLACK);
-        this.isCheckOnWhite = isMateOnWhite ? true : gameSession.isCheck(Color.WHITE);
+        this.isCheckOnBlack = isMateOnBlack || gameSession.isCheck(Color.BLACK);
+        this.isCheckOnWhite = isMateOnWhite || gameSession.isCheck(Color.WHITE);
     }
 }

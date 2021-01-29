@@ -21,8 +21,7 @@ import java.util.UUID;
 @Slf4j
 @Controller
 public class HomeController {
-    private Map<UUID, Player> players;
-    private Map<UUID, GameSession> gameSessions;
+    private final Map<UUID, Player> players;
     private static final Gson playerSerializer = new GsonBuilder()
             .registerTypeAdapter(Player.class, new PlayerSerializer())
             .create();
@@ -30,7 +29,6 @@ public class HomeController {
     @Autowired
     public HomeController(@Qualifier("players") Map<UUID, Player> players,@Qualifier("gameSessions") Map<UUID, GameSession> gameSessions) {
         this.players = players;
-        this.gameSessions = gameSessions;
     }
 
     @GetMapping("/")
