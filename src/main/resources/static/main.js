@@ -35,6 +35,7 @@ gameSession[7][7] = "ROOK_BLACK.png"
 let domain = window.location.href.slice(-1) !== "#" ? window.location.href : window.location.href.slice(0, -1)
 let gameSessionId = ""
 let sock = new SockJS(domain + "chess")
+
 let stompClient = Stomp.over(sock)
 stompClient.connect({}, function(frame) {
     console.log("connected: " + frame)
@@ -75,43 +76,26 @@ $.get("/reload", function(data, status) {
         }
         for (let i = 0; i < data.length; ++i) {
             if (data[i] != null) {
-                gameSession[data[i].x][data[i].y] = data[i].type + data[i].color + ".png"
+                gameSession[data[i].x][data[i].y] = data[i].type + "_" + data[i].color + ".png"
             }
         }
         $.get("/getInfo", function(data, status) {
             if (data != null) {
+                $.get("/getId", function(data, status) {
+                    uuid = data
+                })
+                subscribeToGame()
                 data = JSON.parse(data)
+                console.log("get info")
+                console.log(data)
                 side = data.side
+                console.log("brefore drawing pieces")
+                drawPieces(null)
+                console.log(gameSession)
             }
         })
-        console.log("brefore drawing pieces")
-        console.log(gameSession)
     }
 })
-
-
-function sendMsg() {
-    $.get("/getGameSessionId", function(data, status) {
-        if (status == "success") {
-            if (data != null && data != "") {
-                let move = {
-                    msgType: 1,
-                    id: data,
-                    move: {
-                        fromX: 0,
-                        fromY: 1,
-                        toX: 0,
-                        toY: 2,
-                        fromPiece: null,
-                        toPiece: null,
-                        doable: false
-                    }
-                }
-                //stompClient.send("/app/chess/" + data, {}, JSON.stringify(move))
-            }
-        }
-    })
-}
 
 function findGame() {
     $.get("/getId", function(data, status) {
@@ -251,6 +235,7 @@ function preloadAllImages() {
                 isMateOnWhite: false,
                 isMateOnBlack: false}
             console.log(obj)
+            console.log("print send msg")
             stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         } else if (typeof side !== "undefined" && side == "black" && positions.length == 2) {
             let obj = {msgType:1,

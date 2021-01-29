@@ -18,10 +18,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 
 /*
     TODO:
@@ -54,7 +51,24 @@ public class ApiController {
     @GetMapping("/reload")
     @ResponseBody
     public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
-        if (!playerId.equals("none")) {
+        /*
+        try {
+            if (!playerId.equals("none")) {
+                UUID id = UUID.fromString(playerId);
+                if (players.containsKey(id)) {
+                    Player player = players.get(id);
+                    if (player != null) {
+                        if (gameSessions.containsKey(player.getGameSessionId())) {
+                            GameSession gameSession = gameSessions.get(player.getGameSessionId());
+
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return "null";
+        }
+        if (!playerId.equals("none")) {     // cookie has playerId attribute
             try {
                 UUID id = UUID.fromString(playerId);
                 Player player = players.get(id);
@@ -75,7 +89,24 @@ public class ApiController {
             } catch (Exception e) {
                 return "null";
             }
-        } else {
+        } else {                            // cookie hasn't got playerId attribute
+            return "null";
+        }
+
+         */
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Piece[][].class, new PiecesSerializer())
+                .create();
+
+        try {
+            return Optional
+                    .ofNullable(playerId)
+                    .map(UUID::fromString)
+                    .map(players::get)
+                    .map(player -> gameSessions.get(player.getGameSessionId()))
+                    .map(gameSession -> gson.toJson(gameSession.getChessboard()))
+                    .orElse("null");
+        } catch (Exception e) {
             return "null";
         }
     }
