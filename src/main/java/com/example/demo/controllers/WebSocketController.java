@@ -5,6 +5,7 @@ import chessLib.GameSession;
 import chessLib.Move;
 import chessLib.Player;
 import com.example.demo.moveMessage.MoveMessage;
+import com.example.demo.service.GameSessionsService;
 import com.example.demo.service.GamesHistoryService;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
@@ -27,13 +28,13 @@ import java.util.UUID;
 public class WebSocketController {
     private final GamesHistoryService gamesHistoryService;
     private final SimpMessagingTemplate simpMessagingTemplate;
-    private final Map<UUID, GameSession> gameSessions;
+    private final GameSessionsService gameSessions;
     private final Gson gsonMoveMessageSerializer;
 
     @Autowired
     public WebSocketController(GamesHistoryService gamesHistoryService,
                                SimpMessagingTemplate simpMessagingTemplate,
-                               @Qualifier("gameSessions") Map<UUID, GameSession> gameSessions,
+                               GameSessionsService gameSessions,
                                @Qualifier("gsonMoveMessageSerializer") Gson gsonMoveMessageSerializer) {
         this.gamesHistoryService = gamesHistoryService;
         this.simpMessagingTemplate = simpMessagingTemplate;
@@ -70,6 +71,15 @@ public class WebSocketController {
                 Optional.of(moveMessage.getGameUuid())
                         .map(gameSessions::get)
                         .ifPresent(gameSession -> {
+                            if (gameSession.getColorTurn() == Color.WHITE) {
+                                if (!gameSession.getWhitePlayerId().equals(moveMessage.getPlayerUuid())) {
+                                    return;
+                                }
+                            } else {
+                                if (!gameSession.getBlackPlayerId().equals(moveMessage.getPlayerUuid())) {
+                                    return;
+                                }
+                            }
                             boolean a = gameSession.getColorTurn() == Color.WHITE
                                     ? gameSession.getWhitePlayer().getId().equals(moveMessage.getPlayerUuid())
                                     : Optional.ofNullable(gameSession.getBlackPlayer())
@@ -87,6 +97,7 @@ public class WebSocketController {
                                     gamesHistoryService.saveGameHistory(gameSession);
                                 }
                                 log.info(moveMessage.toString());
+                                moveMessage.setPlayerUuid(null);
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
                             }
                         });

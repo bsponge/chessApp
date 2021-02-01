@@ -3,6 +3,8 @@ package com.example.demo.controllers;
 import chessLib.Color;
 import chessLib.GameSession;
 import chessLib.Player;
+import com.example.demo.service.GameSessionsService;
+import com.example.demo.service.PlayersService;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
@@ -30,16 +32,16 @@ import java.util.stream.Collectors;
 @RestController
 @CrossOrigin
 public class ApiController {
-    private final Map<UUID, GameSession> gameSessions;
+    private final GameSessionsService gameSessions;
     private final Queue<GameSession> gameQueue;
-    private final Map<UUID, Player> players;
+    private final PlayersService players;
     private final Gson gsonPiecesSerializer;
 
 
     @Autowired
-    public ApiController(@Qualifier("gameSessions") Map<UUID, GameSession> gameSessions,
+    public ApiController(GameSessionsService gameSessions,
+                         PlayersService players,
                          @Qualifier("gameQueue") Queue<GameSession> gameQueue,
-                         @Qualifier("players") Map<UUID, Player> players,
                          @Qualifier("gsonPiecesSerializer") Gson gsonPiecesSerializer) {
         this.gameSessions = gameSessions;
         this.gameQueue = gameQueue;
@@ -102,7 +104,7 @@ public class ApiController {
                                 gameSession.setBlacksTime(120_000L);    // 2 minutes
                                 player.setColor(Color.BLACK);
                                 player.setGameSessionId(gameSession.getId());
-                                gameSessions.put(gameSession.getId(), gameSession);
+                                gameSessions.save(gameSession);
                                 SidesMessage sidesMessage = new SidesMessage(
                                         gameSession.getWhitePlayer().getId().toString(),
                                         gameSession.getBlackPlayer().getId().toString()
