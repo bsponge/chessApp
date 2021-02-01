@@ -2,10 +2,13 @@ let size = 80           // size of a square
 let images = new Map()  // map for images
 let uuid                // player UUID
 let side                // side (white or black)
-
+let turn = true         // true == WHITE    false == BLACK
+let whiteTime = 120_000      // in milliseconds
+let blackTime = 120_000
 let isPromotionMenuOn = false
 let promotionChoicePosition = []
-
+let whiteTimer
+let blackTimer
 let gameSession = []    // 2d array representing pieces on chessboard
 for (let i = 0; i < 8; ++i) {
     gameSession[i] = []
@@ -58,7 +61,7 @@ QUEEN_WHITE.png
 ROOK_BLACK.png
 ROOK_WHITE.png`.split("\n")
 let ctx = document.getElementById('pieces').getContext('2d')
-let timeElement = document.getElementById("panel")
+let timeElement = document.getElementById("time")
 ctx.canvas.width = size * 8
 ctx.canvas.height = size * 8
 
@@ -66,8 +69,8 @@ ctx.canvas.height = size * 8
 preloadAllImages()
 
 $.get("/reload", function(data, status) {
-    if (data != null && data.pieces != null) {
-        data = JSON.parse(data).pieces
+    if (data != null && data !== "null") {
+        data = JSON.parse(data)
         for (let i = 0; i < 8; ++i) {
             for (let j = 0; j < 8; ++j) {
                 gameSession[i][j] = null
@@ -125,6 +128,21 @@ function onReceivedMessage(msg) {
 
                 break
             case 1:
+                if (whiteTimer == null) {
+                    whiteTimer = setInterval(function() {
+                        if (turn) {
+                            document.getElementById("whiteTime").innerHTML = "White: " + String(Math.floor((whiteTime / 1000) / 60)) + ":" + String(Math.floor((whiteTime / 1000) % 60))
+                            whiteTime -= 100
+                        }
+                    }, 100)
+                    blackTimer = setInterval(function() {
+                        if (!turn) {
+                            document.getElementById("blackTime").innerHTML = "Black: " + String(Math.floor((blackTime / 1000) / 60)) + ":" + String(Math.floor((blackTime / 1000) % 60))
+                            blackTime -= 100
+                        }
+                    }, 100)
+                }
+                turn = !turn
                 drawPieces(msg)
                 if (side === "white" && msg.checkOnWhtie) {
                     document.body.style.backgroundColor = "red";

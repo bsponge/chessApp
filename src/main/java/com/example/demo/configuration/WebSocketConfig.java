@@ -18,7 +18,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic");
-        // stomp musi wyslac przez /app/topic/{user}
+        // stomp has to send messages to /app/topic/{gameSessionId}
         registry.setApplicationDestinationPrefixes("/app");
     }
 
