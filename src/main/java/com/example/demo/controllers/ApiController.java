@@ -1,22 +1,18 @@
 package com.example.demo.controllers;
 
-import chessLib.*;
-import com.example.demo.moveMessage.MoveMessage;
-import com.example.demo.serializers.MoveMessageSerializer;
+import chessLib.Color;
+import chessLib.GameSession;
+import chessLib.Piece;
+import chessLib.Player;
 import com.example.demo.serializers.PiecesSerializer;
-import com.example.demo.service.GamesHistoryService;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -25,8 +21,7 @@ import java.util.stream.Collectors;
 /*
     TODO:
         - undoMove accept
-        - game time
-        - extract websocket endpoints to external class
+        - end game if time is over
         - extract gson serializers from methods
  */
 
@@ -39,38 +34,32 @@ import java.util.stream.Collectors;
 @RestController
 @CrossOrigin
 public class ApiController {
-    private final SimpMessagingTemplate simpMessagingTemplate;
     private final Map<UUID, GameSession> gameSessions;
     private final Queue<GameSession> gameQueue;
     private final Map<UUID, Player> players;
-    private final GamesHistoryService gamesHistoryService;
+    private final Gson gsonPiecesSerializer;
+
 
     @Autowired
-    public ApiController(SimpMessagingTemplate simpMessagingTemplate,
-                         GamesHistoryService gamesHistoryService,
-                         @Qualifier("gameSessions") Map<UUID, GameSession> gameSessions,
+    public ApiController(@Qualifier("gameSessions") Map<UUID, GameSession> gameSessions,
                          @Qualifier("gameQueue") Queue<GameSession> gameQueue,
-                         @Qualifier("players") Map<UUID, Player> players) {
-        this.simpMessagingTemplate = simpMessagingTemplate;
-        this.gamesHistoryService = gamesHistoryService;
+                         @Qualifier("players") Map<UUID, Player> players,
+                         @Qualifier("gsonPiecesSerializer") Gson gsonPiecesSerializer) {
         this.gameSessions = gameSessions;
         this.gameQueue = gameQueue;
         this.players = players;
+        this.gsonPiecesSerializer = gsonPiecesSerializer;
     }
 
     /**
      * Returns json String representing Piece[] of active GameSession
-     * @param playerId
+     * @param playerId player's uuid
      * @return json String representing Piece[] of active GameSession
      */
     @GetMapping("/reload")
     @ResponseBody
     public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
         if (!playerId.equals("none")) {     // player has playerId attribute in cookie
-            Gson gson = new GsonBuilder()
-                    .registerTypeAdapter(Piece[][].class, new PiecesSerializer())
-                    .create();
-
             try {                           // if player has active game return json String representing array of pieces
                 return Optional
                         .of(playerId)
@@ -82,7 +71,7 @@ public class ApiController {
                                 .flatMap(Arrays::stream)
                                 .filter(Objects::nonNull)
                                 .collect(Collectors.toList()))
-                        .map(gson::toJson)
+                        .map(gsonPiecesSerializer::toJson)
                         .orElse("null");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -131,71 +120,6 @@ public class ApiController {
             }
         } else {
             return new ResponseEntity<>(null, HttpStatus.ACCEPTED);
-        }
-    }
-
-    @MessageMapping("/chess/{toGameSession}")
-    public void sendMoveMessage(@DestinationVariable String toGameSession, String move) {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(MoveMessage.class, new MoveMessageSerializer())
-                .create();
-        try {
-            MoveMessage moveMessage = gson.fromJson(move, MoveMessage.class);
-            if (moveMessage.isUndo()) {                         // undo move message
-                Optional.of(moveMessage.getGameUuid())
-                        .map(gameSessions::get)
-                        .ifPresent(gameSession -> {
-                            if (gameSession.getMovesHistory().size() > 0) {
-                                Move lastMove = gameSession.getLastMove();
-                                lastMove = new Move(lastMove.getToX(),
-                                        lastMove.getToY(),
-                                        lastMove.getFromX(),
-                                        lastMove.getFromY(),
-                                        lastMove.getColor(),
-                                        lastMove.getType(),
-                                        lastMove.getEnemyColor(),
-                                        lastMove.getEnemyType());
-                                gameSession.undoLastMove();
-                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, lastMove, null);
-                                mm.setChecksAndMates(gameSession);
-                                simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
-                            }
-                        });
-            } else {                                            // move message
-                Move mv = moveMessage.getMove();
-                Optional.of(moveMessage.getGameUuid())
-                        .map(gameSessions::get)
-                        .ifPresent(gameSession -> {
-                            boolean a = gameSession.getColorTurn() == Color.WHITE
-                                    ? gameSession.getWhitePlayer().getId().equals(moveMessage.getPlayerUuid())
-                                    : Optional.ofNullable(gameSession.getBlackPlayer())
-                                    .map(Player::getId)
-                                    .map(player -> player.equals(moveMessage.getPlayerUuid()))
-                                    .orElse(false);
-                            boolean b = gameSession.move(mv.getFromX(), mv.getFromY(), mv.getToX(), mv.getToY(), moveMessage.getPromotionType());
-                            if (a && b) {
-                                gameSession.setMovesTime(System.currentTimeMillis());
-                                if ((mv.getFromX() == 4 && mv.getToX() == 6) || (mv.getFromX() == 4 && mv.getToX() == 2)) {
-                                    moveMessage.setCastle(true);
-                                }
-                                moveMessage.setChecksAndMates(gameSession);
-                                if (moveMessage.isMateOnBlack() || moveMessage.isMateOnWhite()) {
-                                    gamesHistoryService.saveGameHistory(gameSession);
-                                }
-                                log.info(moveMessage.toString());
-                                log.info("Whites time: " + (gameSession.getWhitesTime() / 1000) / 60 + " min " + (gameSession.getWhitesTime() / 1000) % 60);
-                                log.info("Blacks tiem: " + (gameSession.getBlacksTime() / 1000) / 60 + " min " + (gameSession.getBlacksTime() / 1000) % 60);
-                                simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
-                            }
-                        });
-                log.info("move received");
-            }
-
-        } catch (JsonParseException e) {
-            e.printStackTrace();
-            log.info("Wrong move message!");
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 }
