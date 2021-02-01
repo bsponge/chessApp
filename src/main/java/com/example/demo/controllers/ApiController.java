@@ -103,16 +103,18 @@ public class ApiController {
                         .map(UUID::fromString)
                         .map(players::get)
                         .map(player -> {
-                            if (gameQueue.isEmpty()) {
+                            if (gameQueue.isEmpty()) {                  // white player
                                 GameSession gameSession = new GameSession(player);
+                                gameSession.setWhitesTime(120_000L);    // 2 minutes
                                 gameQueue.add(gameSession);
                                 player.setColor(Color.WHITE);
                                 player.setGameSessionId(gameSession.getId());
                                 SidesMessage sidesMessage = new SidesMessage(gameSession.getWhitePlayer().getId().toString(), null);
                                 return new ResponseEntity<>(sidesMessage.toString(), HttpStatus.OK);
-                            } else {
+                            } else {                                    // black player
                                 GameSession gameSession = gameQueue.poll();
                                 gameSession.setBlackPlayer(player);
+                                gameSession.setBlacksTime(120_000L);    // 2 minutes
                                 player.setColor(Color.BLACK);
                                 player.setGameSessionId(gameSession.getId());
                                 gameSessions.put(gameSession.getId(), gameSession);
@@ -139,7 +141,7 @@ public class ApiController {
                 .create();
         try {
             MoveMessage moveMessage = gson.fromJson(move, MoveMessage.class);
-            if (moveMessage.isUndo()) {
+            if (moveMessage.isUndo()) {                         // undo move message
                 Optional.of(moveMessage.getGameUuid())
                         .map(gameSessions::get)
                         .ifPresent(gameSession -> {
@@ -159,7 +161,7 @@ public class ApiController {
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
                             }
                         });
-            } else {
+            } else {                                            // move message
                 Move mv = moveMessage.getMove();
                 Optional.of(moveMessage.getGameUuid())
                         .map(gameSessions::get)
@@ -172,6 +174,7 @@ public class ApiController {
                                     .orElse(false);
                             boolean b = gameSession.move(mv.getFromX(), mv.getFromY(), mv.getToX(), mv.getToY(), moveMessage.getPromotionType());
                             if (a && b) {
+                                gameSession.setMovesTime(System.currentTimeMillis());
                                 if ((mv.getFromX() == 4 && mv.getToX() == 6) || (mv.getFromX() == 4 && mv.getToX() == 2)) {
                                     moveMessage.setCastle(true);
                                 }
@@ -180,6 +183,8 @@ public class ApiController {
                                     gamesHistoryService.saveGameHistory(gameSession);
                                 }
                                 log.info(moveMessage.toString());
+                                log.info("Whites time: " + (gameSession.getWhitesTime() / 1000) / 60 + " min " + (gameSession.getWhitesTime() / 1000) % 60);
+                                log.info("Blacks tiem: " + (gameSession.getBlacksTime() / 1000) / 60 + " min " + (gameSession.getBlacksTime() / 1000) % 60);
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, moveMessage);
                             }
                         });
