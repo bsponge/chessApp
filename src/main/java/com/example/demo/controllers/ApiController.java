@@ -2,12 +2,9 @@ package com.example.demo.controllers;
 
 import chessLib.Color;
 import chessLib.GameSession;
-import chessLib.Piece;
 import chessLib.Player;
-import com.example.demo.serializers.PiecesSerializer;
 import com.example.demo.sides.SidesMessage;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,7 +19,6 @@ import java.util.stream.Collectors;
     TODO:
         - undoMove accept
         - end game if time is over
-        - extract gson serializers from methods
  */
 
 /**
