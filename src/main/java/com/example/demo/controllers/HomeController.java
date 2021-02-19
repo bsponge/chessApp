@@ -1,11 +1,9 @@
 package com.example.demo.controllers;
 
-import chessLib.Player;
+import com.example.demo.player.Player;
 import com.example.demo.service.PlayersService;
-import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,13 +16,10 @@ import java.util.UUID;
 @Controller
 public class HomeController {
     private final PlayersService players;
-    private final Gson gsonPlayerSerializer;
 
     @Autowired
-    public HomeController(PlayersService players,
-                          @Qualifier("gsonPlayerSerializer") Gson gsonPlayerSerializer) {
+    public HomeController(PlayersService players) {
         this.players = players;
-        this.gsonPlayerSerializer = gsonPlayerSerializer;
     }
 
     @GetMapping("/")
@@ -32,7 +27,7 @@ public class HomeController {
         log.info(playerId);
         if (playerId.equals("none")) {
             Player player = new Player();
-            Cookie cookie = new Cookie("playerId", player.getId().toString());
+            Cookie cookie = new Cookie("playerId", player.getUuid().toString());
             players.save(player);
             log.info(player.toString());
             response.addCookie(cookie);
@@ -41,7 +36,7 @@ public class HomeController {
                 UUID id = UUID.fromString(playerId);
                 if (!players.containsPlayerWithId(id)) {
                     Player player = new Player();
-                    player.setId(id);
+                    player.setUuid(id);
                     players.save(player);
                     log.info("New player " + player.toString());
                 }

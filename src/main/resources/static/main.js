@@ -37,6 +37,24 @@ gameSession[5][7] = "BISHOP_BLACK.png"
 gameSession[6][7] = "KNIGHT_BLACK.png"
 gameSession[7][7] = "ROOK_BLACK.png"
 
+const PAWN = 1
+const BISHOP = 2;
+const KNIGHT = 4;
+const ROOK = 8;
+const QUEEN = 16;
+const KING = 32;
+
+const WHITE = 64
+const BLACK = 128
+
+const pieces = new Map()
+pieces[PAWN] = "PAWN"
+pieces[BISHOP] = "BISHOP"
+pieces[KNIGHT] = "KNIGHT"
+pieces[ROOK] = "ROOK"
+pieces[QUEEN] = "QUEEN"
+pieces[KING] = "KING"
+
 let domain = window.location.href.slice(-1) !== "#" ? window.location.href : window.location.href.slice(0, -1)
 let gameSessionId = ""
 let sock = new SockJS(domain + "chess")
@@ -68,6 +86,7 @@ ctx.canvas.height = size * 8
 
 preloadAllImages()
 
+/*
 $.get("/reload", function(data, status) {
     if (data != null && data !== "null") {
         data = JSON.parse(data)
@@ -95,6 +114,14 @@ $.get("/reload", function(data, status) {
     }
 })
 
+ */
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
 function findGame() {
     $.get("/getId", function(data, status) {
         uuid = data
@@ -104,9 +131,11 @@ function findGame() {
                     data = JSON.parse(data)
                     if (uuid === data.whiteSide) {
                         side = "white"
+                        gameSessionId = getCookie("gameUuid")
                         console.log(side)
                     } else {
                         side = "black"
+                        gameSessionId = getCookie("gameUuid")
                         console.log(side)
                     }
                     drawChessboard()
@@ -167,7 +196,6 @@ function subscribeToGame() {
     $.get("/getGameSessionId", function(data, status) {
         if (status === "success") {
             if (data != null) {
-                gameSessionId = data
                 stompClient.subscribe("/topic/messages/" + gameSessionId, onReceivedMessage)
                 drawPieces()
             }
@@ -367,32 +395,30 @@ function preloadAllImages() {
 }
 
 function undoMove() {
-    $.get("/getGameSessionId", function(data, status) {
+    $.get("/getId", function(data, status) {
         if (data != null && typeof data != "undefined") {
-            let gameId = data
-            $.get("/getId", function(data, status) {
-                if (data != null && typeof data != "undefined") {
-                    let obj = {msgType:1,
-                        id: gameId,
-                        playerId: data,
-                        isUndo:true,
-                        move:
-                            {fromX:0,
-                                fromY:0,
-                                toX:0,
-                                toY:0},
-                        isCheckOnWhite: false,
-                        isCheckOnBlack: false,
-                        isMateOnWhite: false,
-                        isMateOnBlack: false}
-                    stompClient.send("/app/chess/" + gameId, {}, JSON.stringify(obj))
-                }
-            })
+            let obj = {msgType:1,
+                id: gameSessionId,
+                playerId: data,
+                isUndo:true,
+                move:
+                    {fromX:0,
+                        fromY:0,
+                        toX:0,
+                        toY:0},
+                isCheckOnWhite: false,
+                isCheckOnBlack: false,
+                isMateOnWhite: false,
+                isMateOnBlack: false}
+            stompClient.send("/app/chess/" + gameSessionId, {}, JSON.stringify(obj))
         }
     })
 }
 
 function drawPieces(data, brightness = 100) {
+    console.log("draw pieces")
+    console.log(data)
+    console.log(brightness)
     let ctx = document.getElementById('pieces').getContext('2d')
     if (data != null) {
         if (data.castle) {
@@ -408,11 +434,11 @@ function drawPieces(data, brightness = 100) {
         gameSession[data.move.toX][data.move.toY] = gameSession[data.move.fromX][data.move.fromY]
         gameSession[data.move.fromX][data.move.fromY] = null
 
-        if (data.promotionType != null) {
+        if (data.promotionType !== 0) {
             if (gameSession[data.move.toX][data.move.toY].includes("WHITE")) {
-                gameSession[data.move.toX][data.move.toY] = data.promotionType + "_" + "WHITE.png"
+                gameSession[data.move.toX][data.move.toY] = pieces[data.promotionType] + "_" + "WHITE.png"
             } else {
-                gameSession[data.move.toX][data.move.toY] = data.promotionType + "_" + "BLACK.png"
+                gameSession[data.move.toX][data.move.toY] = pieces[data.promotionType] + "_" + "BLACK.png"
             }
         }
 
@@ -427,7 +453,10 @@ function drawPieces(data, brightness = 100) {
             for (let i = 0; i < 8; ++i) {
                 for (let j = 0; j < 8; ++j) {
                     if (gameSession[i][j] != null) {
+
                         ctx.filter = `brightness(${brightness}%)`
+                        console.log("in loop")
+                        console.log(gameSession[i][j])
                         ctx.drawImage(images.get(gameSession[i][j]), i * size, (7-j) * size, size, size)
                     }
                 }

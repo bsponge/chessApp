@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import chessLib.Player;
+import com.example.demo.player.Player;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -22,14 +22,14 @@ public class PlayersService {
     }
 
     public void save(Player player) {
-        if (!players.containsKey(player.getId())) {
-            players.put(player.getId(), player);
+        if (!players.containsKey(player.getUuid())) {
+            players.put(player.getUuid(), player);
         }
     }
 
     public boolean contains(Player player) {
         if (player != null) {
-            return players.containsKey(player.getId());
+            return players.containsKey(player.getUuid());
         }
         return false;
     }

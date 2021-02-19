@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import chessLib.GameSession;
+import chessLibOptimized.Game;
 import com.example.demo.gameHistory.GameHistory;
 import com.example.demo.repository.GamesHistoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,7 @@ public class GamesHistoryService {
         this.gamesHistoryRepository = gamesHistoryRepository;
     }
 
-    public void saveGameHistory(GameSession gameSession) {
+    public void saveGameHistory(Game gameSession) {
         gamesHistoryRepository.save(new GameHistory(gameSession));
     }
 }

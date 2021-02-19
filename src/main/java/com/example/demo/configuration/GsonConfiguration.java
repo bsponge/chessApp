@@ -1,11 +1,8 @@
 package com.example.demo.configuration;
 
-import chessLib.Piece;
-import chessLib.Player;
 import com.example.demo.moveMessage.MoveMessage;
+import com.example.demo.serializers.ChessboardSerializer;
 import com.example.demo.serializers.MoveMessageSerializer;
-import com.example.demo.serializers.PiecesSerializer;
-import com.example.demo.serializers.PlayerSerializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.springframework.context.annotation.Bean;
@@ -20,17 +17,10 @@ public class GsonConfiguration {
                 .create();
     }
 
-    @Bean("gsonPiecesSerializer")
-    public Gson gsonPiecesSerializer() {
+    @Bean("gsonChessboardSerializer")
+    public Gson gsonChessboardSerializer() {
         return new GsonBuilder()
-                .registerTypeAdapter(Piece[][].class, new PiecesSerializer())
-                .create();
-    }
-
-    @Bean("gsonPlayerSerializer")
-    public Gson gsonPlayerSerializer() {
-        return new GsonBuilder()
-                .registerTypeAdapter(Player.class, new PlayerSerializer())
+                .registerTypeAdapter(int[][].class, new ChessboardSerializer())
                 .create();
     }
 }

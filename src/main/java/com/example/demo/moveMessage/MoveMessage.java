@@ -1,9 +1,8 @@
 package com.example.demo.moveMessage;
 
-import chessLib.Color;
-import chessLib.GameSession;
-import chessLib.Move;
-import chessLib.Type;
+import chessLibOptimized.Color;
+import chessLibOptimized.Game;
+import chessLibOptimized.Move;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -24,9 +23,9 @@ public class MoveMessage {
     private boolean isMateOnWhite;
     private boolean isMateOnBlack;
     private boolean isCastle;
-    private Type promotionType;
+    private int promotionType;
 
-    public MoveMessage(UUID gameUuid, UUID playerUuid, boolean isUndo, Move move, Type promotionType) {
+    public MoveMessage(UUID gameUuid, UUID playerUuid, boolean isUndo, Move move, int promotionType) {
         this.gameUuid = gameUuid;
         this.playerUuid = playerUuid;
         this.isUndo = isUndo;
@@ -41,7 +40,7 @@ public class MoveMessage {
         this.move = move;
     }
 
-    public void setChecksAndMates(GameSession gameSession) {
+    public void setChecksAndMates(Game gameSession) {
         this.isMateOnWhite = gameSession.isMate(Color.WHITE);
         this.isMateOnBlack = gameSession.isMate(Color.BLACK);
         this.isCheckOnBlack = isMateOnBlack || gameSession.isCheck(Color.BLACK);

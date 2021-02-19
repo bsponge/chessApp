@@ -1,7 +1,7 @@
 package com.example.demo.gameHistory;
 
-import chessLib.GameSession;
-import chessLib.Move;
+import chessLibOptimized.Game;
+import chessLibOptimized.Move;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -18,11 +18,11 @@ public class GameHistory {
     private UUID whitePlayerId;
     private UUID blackPlayerId;
 
-    public GameHistory(GameSession gameSession) {
-        this.gameId = gameSession.getId();
+    public GameHistory(Game gameSession) {
+        this.gameId = gameSession.getUuid();
         this.movesHistory = gameSession.getMovesHistory();
-        this.whitePlayerId = gameSession.getWhitePlayerId();
-        this.blackPlayerId = gameSession.getWhitePlayerId();
+        this.whitePlayerId = gameSession.getWhitePlayerUuid();
+        this.blackPlayerId = gameSession.getWhitePlayerUuid();
     }
 
     public GameHistory() {

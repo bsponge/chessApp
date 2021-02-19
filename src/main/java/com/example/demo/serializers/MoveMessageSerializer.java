@@ -1,11 +1,12 @@
 package com.example.demo.serializers;
 
-import chessLib.Move;
+import chessLibOptimized.Move;
 import com.example.demo.moveMessage.MoveMessage;
 import com.google.gson.*;
 
 import java.lang.reflect.Type;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 public class MoveMessageSerializer implements JsonDeserializer<MoveMessage> {
@@ -26,27 +27,14 @@ public class MoveMessageSerializer implements JsonDeserializer<MoveMessage> {
                                 .map(JsonElement::getAsBoolean)
                                 .orElseThrow(),
                         new Move(
-                                Optional.ofNullable(jsonObject.getAsJsonObject("move"))
-                                        .map(move -> move.get("fromX"))
-                                        .map(JsonElement::getAsInt)
-                                        .orElseThrow(),
-                                Optional.ofNullable(jsonObject.getAsJsonObject("move"))
-                                        .map(move -> move.get("fromY"))
-                                        .map(JsonElement::getAsInt)
-                                        .orElseThrow(),
-                                Optional.ofNullable(jsonObject.getAsJsonObject("move"))
-                                        .map(move -> move.get("toX"))
-                                        .map(JsonElement::getAsInt)
-                                        .orElseThrow(),
-                                Optional.ofNullable(jsonObject.getAsJsonObject("move"))
-                                        .map(move -> move.get("toY"))
-                                        .map(JsonElement::getAsInt)
-                                        .orElseThrow()
+                                Optional.ofNullable(jsonObject.getAsJsonObject("move")).map(move -> move.get("fromX")).map(JsonElement::getAsInt).orElseThrow(),
+                                Optional.ofNullable(jsonObject.getAsJsonObject("move")).map(move -> move.get("fromY")).map(JsonElement::getAsInt).orElseThrow(),
+                                Optional.ofNullable(jsonObject.getAsJsonObject("move")).map(move -> move.get("toX")).map(JsonElement::getAsInt).orElseThrow(),
+                                Optional.ofNullable(jsonObject.getAsJsonObject("move")).map(move -> move.get("toY")).map(JsonElement::getAsInt).orElseThrow()
                         ),
                         Optional.ofNullable(jsonObject.get("promotionType"))
-                                .map(JsonElement::getAsString)
-                                .map(chessLib.Type::valueOf)
-                                .orElse(null)
+                                .map(JsonElement::getAsInt)
+                                .orElse(0)
                         )
                 ).orElse(MoveMessage.WRONG_MOVE_MESSAGE);
         /*

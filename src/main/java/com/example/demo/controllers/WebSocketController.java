@@ -1,9 +1,7 @@
 package com.example.demo.controllers;
 
-import chessLib.Color;
-import chessLib.GameSession;
-import chessLib.Move;
-import chessLib.Player;
+import chessLibOptimized.Color;
+import chessLibOptimized.Move;
 import com.example.demo.moveMessage.MoveMessage;
 import com.example.demo.service.GameSessionsService;
 import com.example.demo.service.GamesHistoryService;
@@ -18,7 +16,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -52,16 +49,8 @@ public class WebSocketController {
                         .ifPresent(gameSession -> {
                             if (gameSession.getMovesHistory().size() > 0) {
                                 Move lastMove = gameSession.getLastMove();
-                                lastMove = new Move(lastMove.getToX(),
-                                        lastMove.getToY(),
-                                        lastMove.getFromX(),
-                                        lastMove.getFromY(),
-                                        lastMove.getColor(),
-                                        lastMove.getType(),
-                                        lastMove.getEnemyColor(),
-                                        lastMove.getEnemyType());
                                 gameSession.undoLastMove();
-                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, lastMove, null);
+                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, lastMove, 0);
                                 mm.setChecksAndMates(gameSession);
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
                             }
@@ -71,19 +60,17 @@ public class WebSocketController {
                 Optional.of(moveMessage.getGameUuid())
                         .map(gameSessions::get)
                         .ifPresent(gameSession -> {
-                            if (gameSession.getColorTurn() == Color.WHITE) {
-                                if (!gameSession.getWhitePlayerId().equals(moveMessage.getPlayerUuid())) {
+                            if (gameSession.getTurn() == Color.WHITE) {
+                                if (!gameSession.getWhitePlayerUuid().equals(moveMessage.getPlayerUuid())) {
                                     return;
                                 }
                             } else {
-                                if (!gameSession.getBlackPlayerId().equals(moveMessage.getPlayerUuid())) {
+                                if (!gameSession.getBlackPlayerUuid().equals(moveMessage.getPlayerUuid())) {
                                     return;
                                 }
                             }
-                            boolean a = gameSession.getColorTurn() == Color.WHITE
-                                    ? gameSession.getWhitePlayer().getId().equals(moveMessage.getPlayerUuid())
-                                    : Optional.ofNullable(gameSession.getBlackPlayer())
-                                    .map(Player::getId)
+                            boolean a = gameSession.getTurn() == Color.WHITE
+                                    ? gameSession.getWhitePlayerUuid().equals(moveMessage.getPlayerUuid()) : Optional.ofNullable(gameSession.getBlackPlayerUuid())
                                     .map(player -> player.equals(moveMessage.getPlayerUuid()))
                                     .orElse(false);
                             boolean b = gameSession.move(mv.getFromX(), mv.getFromY(), mv.getToX(), mv.getToY(), moveMessage.getPromotionType());

@@ -1,8 +1,6 @@
 package com.example.demo.controllers;
 
-import chessLib.Color;
-import chessLib.GameSession;
-import chessLib.Player;
+import chessLibOptimized.Game;
 import com.example.demo.service.GameSessionsService;
 import com.example.demo.service.PlayersService;
 import com.example.demo.sides.SidesMessage;
@@ -14,8 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /*
     TODO:
@@ -33,20 +32,20 @@ import java.util.stream.Collectors;
 @CrossOrigin
 public class ApiController {
     private final GameSessionsService gameSessions;
-    private final Queue<GameSession> gameQueue;
+    private final Queue<Game> gameQueue;
     private final PlayersService players;
-    private final Gson gsonPiecesSerializer;
+    private final Gson gsonChessboardSerializer;
 
 
     @Autowired
     public ApiController(GameSessionsService gameSessions,
                          PlayersService players,
-                         @Qualifier("gameQueue") Queue<GameSession> gameQueue,
-                         @Qualifier("gsonPiecesSerializer") Gson gsonPiecesSerializer) {
+                         @Qualifier("gameQueue") Queue<Game> gameQueue,
+                         @Qualifier("gsonChessboardSerializer") Gson gsonChessboardSerializer) {
         this.gameSessions = gameSessions;
         this.gameQueue = gameQueue;
         this.players = players;
-        this.gsonPiecesSerializer = gsonPiecesSerializer;
+        this.gsonChessboardSerializer = gsonChessboardSerializer;
     }
 
     /**
@@ -54,22 +53,16 @@ public class ApiController {
      * @param playerId player's uuid
      * @return json String representing Piece[] of active GameSession
      */
-    @GetMapping("/reload")
+    @GetMapping("/reload/{uuid}")
     @ResponseBody
-    public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+    public String reload(@CookieValue(value = "playerId", defaultValue = "none") String playerId, @PathVariable String uuid) {
         if (!playerId.equals("none")) {     // player has playerId attribute in cookie
             try {                           // if player has active game return json String representing array of pieces
-                return Optional
-                        .of(playerId)
+                return Optional.of(uuid)
                         .map(UUID::fromString)
-                        .map(players::get)
-                        .map(Player::getGameSessionId)
                         .map(gameSessions::get)
-                        .map(gameSession -> Arrays.stream(gameSession.getChessboard())
-                                .flatMap(Arrays::stream)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList()))
-                        .map(gsonPiecesSerializer::toJson)
+                        .map(Game::getChessboard)
+                        .map(gsonChessboardSerializer::toJson)
                         .orElse("null");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -83,7 +76,9 @@ public class ApiController {
     }
 
     @PostMapping("/findGame")
-    public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
+    public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String playerId,
+                                           @CookieValue(value="gameUuid", defaultValue = "none") String gameUuid,
+                                           HttpServletResponse response) {
         if (!playerId.equals("none")) {
             try {
                 return Optional.of(playerId)
@@ -91,24 +86,26 @@ public class ApiController {
                         .map(players::get)
                         .map(player -> {
                             if (gameQueue.isEmpty()) {                  // white player
-                                GameSession gameSession = new GameSession(player);
+                                Game gameSession = new Game(player.getUuid());
                                 gameSession.setWhitesTime(120_000L);    // 2 minutes
                                 gameQueue.add(gameSession);
-                                player.setColor(Color.WHITE);
-                                player.setGameSessionId(gameSession.getId());
-                                SidesMessage sidesMessage = new SidesMessage(gameSession.getWhitePlayer().getId().toString(), null);
+                                players.get(player.getUuid()).addGameUuid(gameSession.getUuid());
+                                SidesMessage sidesMessage = new SidesMessage(gameSession.getWhitePlayerUuid().toString(), null);
+                                Cookie cookie = new Cookie("gameUuid", gameSession.getUuid().toString());
+                                response.addCookie(cookie);
                                 return new ResponseEntity<>(sidesMessage.toString(), HttpStatus.OK);
                             } else {                                    // black player
-                                GameSession gameSession = gameQueue.poll();
-                                gameSession.setBlackPlayer(player);
+                                Game gameSession = gameQueue.poll();
+                                gameSession.setBlackPlayerUuid(player.getUuid());
                                 gameSession.setBlacksTime(120_000L);    // 2 minutes
-                                player.setColor(Color.BLACK);
-                                player.setGameSessionId(gameSession.getId());
                                 gameSessions.save(gameSession);
+                                players.get(player.getUuid()).addGameUuid(gameSession.getUuid());
                                 SidesMessage sidesMessage = new SidesMessage(
-                                        gameSession.getWhitePlayer().getId().toString(),
-                                        gameSession.getBlackPlayer().getId().toString()
+                                        gameSession.getWhitePlayerUuid().toString(),
+                                        gameSession.getBlackPlayerUuid().toString()
                                 );
+                                Cookie cookie = new Cookie("gameUuid", gameSession.getUuid().toString());
+                                response.addCookie(cookie);
                                 return new ResponseEntity<>(sidesMessage.toString(), HttpStatus.OK);
                             }
                         }).orElse(new ResponseEntity<>("null", HttpStatus.ACCEPTED));

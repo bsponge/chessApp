@@ -1,7 +1,7 @@
 package com.example.demo.configuration;
 
-import chessLib.GameSession;
-import chessLib.Player;
+import chessLibOptimized.Game;
+import com.example.demo.player.Player;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,12 +14,12 @@ import java.util.concurrent.LinkedTransferQueue;
 @Configuration
 public class GameConfiguration {
     @Bean("gameQueue")
-    public Queue<GameSession> gameQueue() {
+    public Queue<Game> gameQueue() {
         return new LinkedTransferQueue<>();
     }
 
     @Bean("gameSessions")
-    public Map<UUID, GameSession> gameSessions() {
+    public Map<UUID, Game> gameSessions() {
         return new ConcurrentHashMap<>();
     }
 
