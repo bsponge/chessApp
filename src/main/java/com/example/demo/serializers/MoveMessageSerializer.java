@@ -23,8 +23,8 @@ public class MoveMessageSerializer implements JsonDeserializer<MoveMessage> {
                                 Optional.ofNullable(jsonObject.get("playerId"))
                                         .map(JsonElement::getAsString)
                                         .orElseThrow()),
-                        Optional.ofNullable(jsonObject.get("isUndo"))
-                                .map(JsonElement::getAsBoolean)
+                        Optional.ofNullable(jsonObject.get("undo"))
+                                .map(JsonElement::getAsInt)
                                 .orElseThrow(),
                         new Move(
                                 Optional.ofNullable(jsonObject.getAsJsonObject("move")).map(move -> move.get("fromX")).map(JsonElement::getAsInt).orElseThrow(),

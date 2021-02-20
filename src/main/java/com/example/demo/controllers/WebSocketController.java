@@ -43,14 +43,21 @@ public class WebSocketController {
     public void sendMoveMessage(@DestinationVariable String toGameSession, String move) {
         try {
             MoveMessage moveMessage = gsonMoveMessageSerializer.fromJson(move, MoveMessage.class);
-            if (moveMessage.isUndo()) {                         // undo move message
+            if (moveMessage.getUndo() != 0) {                         // undo move message
                 Optional.of(moveMessage.getGameUuid())
                         .map(gameSessions::get)
                         .ifPresent(gameSession -> {
                             if (gameSession.getMovesHistory().size() > 0) {
                                 Move lastMove = gameSession.getLastMove();
                                 gameSession.undoLastMove();
-                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), moveMessage.getPlayerUuid(), true, lastMove, 0);
+                                Move m = new Move(
+                                        lastMove.getFromX(),
+                                        lastMove.getFromY(),
+                                        lastMove.getToX(),
+                                        lastMove.getToY(),
+                                        gameSession.getChessboard()[lastMove.getFromX()][lastMove.getFromY()],
+                                        gameSession.getChessboard()[lastMove.getToX()][lastMove.getToY()]);
+                                MoveMessage mm = new MoveMessage(UUID.fromString(toGameSession), null, 1, m, 0);
                                 mm.setChecksAndMates(gameSession);
                                 simpMessagingTemplate.convertAndSend("/topic/messages/" + toGameSession, mm);
                             }

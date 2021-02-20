@@ -17,7 +17,7 @@ public class MoveMessage {
     private UUID gameUuid;
     private UUID playerUuid;
     private Move move;
-    private boolean isUndo;
+    private int undo;
     private boolean isCheckOnWhite;
     private boolean isCheckOnBlack;
     private boolean isMateOnWhite;
@@ -25,18 +25,18 @@ public class MoveMessage {
     private boolean isCastle;
     private int promotionType;
 
-    public MoveMessage(UUID gameUuid, UUID playerUuid, boolean isUndo, Move move, int promotionType) {
+    public MoveMessage(UUID gameUuid, UUID playerUuid, int undo, Move move, int promotionType) {
         this.gameUuid = gameUuid;
         this.playerUuid = playerUuid;
-        this.isUndo = isUndo;
+        this.undo = undo;
         this.move = move;
         this.promotionType = promotionType;
     }
 
-    public MoveMessage(String gameUuid, String playerUuid, boolean isUndo, Move move) {
+    public MoveMessage(String gameUuid, String playerUuid, int undo, Move move) {
         this.gameUuid = UUID.fromString(gameUuid);
         this.playerUuid = UUID.fromString(playerUuid);
-        this.isUndo = isUndo;
+        this.undo = undo;
         this.move = move;
     }
 

@@ -79,7 +79,7 @@ QUEEN_WHITE.png
 ROOK_BLACK.png
 ROOK_WHITE.png`.split("\n")
 let ctx = document.getElementById('pieces').getContext('2d')
-let timeElement = document.getElementById("time")
+document.getElementById("time");
 ctx.canvas.width = size * 8
 ctx.canvas.height = size * 8
 
@@ -126,7 +126,7 @@ function findGame() {
     $.get("/getId", function(data, status) {
         uuid = data
         if (status === "success") {
-            $.post("/findGame", data, function(data, status) {
+            $.post("/findGame", data, function(data) {
                 if (data != null && typeof data != "undefined") {
                     data = JSON.parse(data)
                     if (uuid === data.whiteSide) {
@@ -138,11 +138,8 @@ function findGame() {
                         gameSessionId = getCookie("gameUuid")
                         console.log(side)
                     }
-                    drawChessboard()
                 }
-                drawPieces()
-                console.log(uuid)
-                subscribeToGame()
+                window.location.replace("game?g=" + getCookie("gameUuid"))
             })
         }
     })
@@ -293,7 +290,7 @@ function preloadAllImages() {
                 let obj = {msgType:1,
                     id: gameSessionId,
                     playerId: uuid,
-                    isUndo: false,
+                    undo: 0,
                     move:
                         {   fromX: positions[0][0],
                             fromY: 7-positions[0][1],
@@ -313,7 +310,7 @@ function preloadAllImages() {
                 let obj = {msgType:1,
                     id: gameSessionId,
                     playerId: uuid,
-                    isUndo:false,
+                    undo: 0,
                     move:
                         {   fromX:7-positions[0][0],
                             fromY:positions[0][1],
@@ -400,7 +397,7 @@ function undoMove() {
             let obj = {msgType:1,
                 id: gameSessionId,
                 playerId: data,
-                isUndo:true,
+                undo: 1,
                 move:
                     {fromX:0,
                         fromY:0,
@@ -416,9 +413,6 @@ function undoMove() {
 }
 
 function drawPieces(data, brightness = 100) {
-    console.log("draw pieces")
-    console.log(data)
-    console.log(brightness)
     let ctx = document.getElementById('pieces').getContext('2d')
     if (data != null) {
         if (data.castle) {
@@ -442,8 +436,9 @@ function drawPieces(data, brightness = 100) {
             }
         }
 
-        if (data.undo && data.move.enemyColor != null && data.move.enemyType != null) {
-            gameSession[data.move.fromX][data.move.fromY] = data.move.enemyType + "_" + data.move.enemyColor + ".png"
+        if (data.undo) {
+            gameSession[data.move.fromX][data.move.fromY] = (pieces[data.move.fromPiece & 63]) + "_" + ((data.move.fromPiece & 192) === WHITE ? "WHITE" : "BLACK") + ".png"
+            gameSession[data.move.toX][data.move.toY] = (pieces[data.move.toPiece & 63]) + "_" + ((data.move.toPiece & 192) === WHITE ? "WHITE" : "BLACK") + ".png"
         }
     }
 
@@ -455,8 +450,6 @@ function drawPieces(data, brightness = 100) {
                     if (gameSession[i][j] != null) {
 
                         ctx.filter = `brightness(${brightness}%)`
-                        console.log("in loop")
-                        console.log(gameSession[i][j])
                         ctx.drawImage(images.get(gameSession[i][j]), i * size, (7-j) * size, size, size)
                     }
                 }

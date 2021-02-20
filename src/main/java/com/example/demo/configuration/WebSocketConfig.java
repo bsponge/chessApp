@@ -21,6 +21,4 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // stomp has to send messages to /app/topic/{gameSessionId}
         registry.setApplicationDestinationPrefixes("/app");
     }
-
 }
-
