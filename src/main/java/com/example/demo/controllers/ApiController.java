@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /*
     TODO:
@@ -78,7 +79,8 @@ public class ApiController {
     @PostMapping("/findGame")
     public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String playerId,
                                            @CookieValue(value="gameUuid", defaultValue = "none") String gameUuid,
-                                           HttpServletResponse response) {
+                                           HttpServletResponse response) throws InterruptedException {
+        Thread.sleep(TimeUnit.SECONDS.toMillis(4));
         if (!playerId.equals("none")) {
             try {
                 return Optional.of(playerId)

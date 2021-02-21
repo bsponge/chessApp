@@ -140,6 +140,7 @@ function findGame() {
                     }
                 }
                 window.location.replace("game?g=" + getCookie("gameUuid"))
+                console.log("co jest");
             })
         }
     })

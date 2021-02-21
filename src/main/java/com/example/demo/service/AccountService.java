@@ -28,4 +28,8 @@ public class AccountService {
             accountRepository.save(account);
         }
     }
+
+    public Account findByLogin(String login) {
+        return accountRepository.findByLogin(login);
+    }
 }
