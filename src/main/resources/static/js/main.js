@@ -66,18 +66,18 @@ stompClient.connect({}, function(frame) {
 let positions = []
 
 
-let list = `BISHOP_BLACK.png
-BISHOP_WHITE.png
-KING_BLACK.png
-KING_WHITE.png
-KNIGHT_BLACK.png
-KNIGHT_WHITE.png
-PAWN_BLACK.png
-PAWN_WHITE.png
-QUEEN_BLACK.png
-QUEEN_WHITE.png
-ROOK_BLACK.png
-ROOK_WHITE.png`.split("\n")
+let list = `images/BISHOP_BLACK.png
+images/BISHOP_WHITE.png
+images/KING_BLACK.png
+images/KING_WHITE.png
+images/KNIGHT_BLACK.png
+images/KNIGHT_WHITE.png
+images/PAWN_BLACK.png
+images/PAWN_WHITE.png
+images/QUEEN_BLACK.png
+images/QUEEN_WHITE.png
+images/ROOK_BLACK.png
+images/ROOK_WHITE.png`.split("\n")
 let ctx = document.getElementById('pieces').getContext('2d')
 document.getElementById("time");
 ctx.canvas.width = size * 8
