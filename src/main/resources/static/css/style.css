@@ -7,7 +7,7 @@
 }
 
 body {
-    background-color: black;
+    background-color: grey;
 }
 
 #panel {
@@ -34,7 +34,7 @@ body {
 }
 
 .topnav a.active {
-    background-color: #4CAF50;
+    background-color: dimgrey;
     color: white;
 }
 

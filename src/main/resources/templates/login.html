@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
     <meta charset="UTF-8">
     <title>Title</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -17,11 +18,11 @@
                 dataType: "xml/html/script/json",
                 contentType: "application/json",
                 data: data,
-                success: function() {
-                    window.location.replace("http://localhost:8080")
-                },
-                error: function() {
-
+                complete: function(xhr, textStatus) {
+                    console.log(xhr.status)
+                    if (xhr.status === 200) {
+                        window.location.replace("http://localhost:8080/")
+                    }
                 }
             })
         }

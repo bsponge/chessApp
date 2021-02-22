@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.js" integrity="sha512-lyIq9fRcCeSCXhp41XC/250UBmypAHV8KW+AhLcSEIksWHBfhzub6XXwDe67wTpOG8zrO2NAU/TYmEaCW+aQSg==" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js" integrity="sha512-tL4PIUsPy+Rks1go4kQG8M8/ItpRMvKnbBjQm4d2DQnFwgcBYRRN00QdyQnWSCwNMsoY/MfJY8nHp2CzlNdtZA==" crossorigin="anonymous"></script>
@@ -11,19 +11,17 @@
 <div class="topnav">
     <a class="active" href="">Home</a>
     <a class="active" onclick="findGame()" href="">Find game</a>
+    <a class="active" href="/login">Login</a>
+    <a class="active" href="/register">Register</a>
     <a href="#">News</a>
-    <a href="/register">Register</a>
     <a href="#">Contact</a>
     <a href="#">About</a>
-    <a class="active" onclick="undoMove()" href="#">Undo move</a>
 </div>
 
 <h1 id="text"></h1>
 
 <canvas class="drawing" id="chessboard"></canvas>
 <canvas class="drawing" id="pieces"></canvas>
-<p id="whiteTime" style="color:white">white time</p>
-<p id="blackTime" style="color:white">black time</p>
 
 <div id="panel"></div>
 
