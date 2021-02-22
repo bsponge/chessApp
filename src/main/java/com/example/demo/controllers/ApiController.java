@@ -78,7 +78,6 @@ public class ApiController {
 
     @PostMapping("/findGame")
     public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String playerId,
-
                                            HttpServletResponse response) {
         if (!playerId.equals("none")) {
             try {

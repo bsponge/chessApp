@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function send() {
+            let username = document.querySelector("#username")
+            let password = document.querySelector("#password")
+            let data = JSON.stringify({"username":username.value,"password":password.value})
+            console.log(data)
+            console.log(typeof JSON.parse(data))
+            $.ajax({
+                url: "http://localhost:8080/authenticate",
+                type: "POST",
+                dataType: "xml/html/script/json",
+                contentType: "application/json",
+                data: data,
+                success: function() {
+                    window.location.replace("http://localhost:8080")
+                },
+                error: function() {
+
+                }
+            })
+        }
+    </script>
+</head>
+<body>
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required/>
+        <br/>
+        <label for="password">Password:</label>
+        <input type="text" id="password" name="password" required/>
+    </div>
+    <button onclick="send()">LOGIN</button>
+</body>
+</html>

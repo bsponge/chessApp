@@ -30,30 +30,16 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String homePage(@CookieValue(value = "playerId", defaultValue = "none") String playerId, HttpServletResponse response) {
+    public String homePage(@CookieValue(value = "token", defaultValue = "none") String jwtToken, HttpServletResponse response) {
         if (i == 0) {
             accountService.registerNewUser("123", "123", "123");
             i = 1;
         }
-        log.info(playerId);
-        if (playerId.equals("none")) {
+        log.info(jwtToken);
+        if (jwtToken.equals("none")) {
             Player player = new Player();
-            Cookie cookie = new Cookie("playerId", player.getUuid().toString());
             players.save(player);
             log.info(player.toString());
-            response.addCookie(cookie);
-        } else {
-            try {
-                UUID id = UUID.fromString(playerId);
-                if (!players.containsPlayerWithId(id)) {
-                    Player player = new Player();
-                    player.setUuid(id);
-                    players.save(player);
-                    log.info("New player " + player.toString());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
         return "home";
     }

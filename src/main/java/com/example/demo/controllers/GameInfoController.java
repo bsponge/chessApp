@@ -30,24 +30,6 @@ public class GameInfoController {
         }
     }
 
-    /*
-    @GetMapping("getInfo")
-    @ResponseBody
-    public String getInfo(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
-        if (playerId.equals("none")) {
-            return null;
-        } else {
-            try {
-                UUID id = UUID.fromString(playerId);
-                Player player = playersService.get(id);
-                return gsonPlayerSerializer.toJson(player);
-            } catch (Exception e) {
-                return null;
-            }
-        }
-    }
-     */
-
     @GetMapping("/getGameSessionId")
     @ResponseBody
     public String getGameSessionId(@CookieValue(value = "playerId", defaultValue = "none") String playerId) {
