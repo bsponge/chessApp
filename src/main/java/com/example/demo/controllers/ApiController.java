@@ -78,9 +78,8 @@ public class ApiController {
 
     @PostMapping("/findGame")
     public ResponseEntity<String> findGame(@CookieValue(value = "playerId", defaultValue = "none") String playerId,
-                                           @CookieValue(value="gameUuid", defaultValue = "none") String gameUuid,
-                                           HttpServletResponse response) throws InterruptedException {
-        Thread.sleep(TimeUnit.SECONDS.toMillis(4));
+
+                                           HttpServletResponse response) {
         if (!playerId.equals("none")) {
             try {
                 return Optional.of(playerId)

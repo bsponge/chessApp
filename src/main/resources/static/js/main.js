@@ -141,6 +141,7 @@ function findGame() {
                 }
                 window.location.replace("game?g=" + getCookie("gameUuid"))
                 console.log("co jest");
+                subscribeToGame()
             })
         }
     })
@@ -385,8 +386,8 @@ function preloadAllImages() {
                 }
             }
             isPromotionMenuOn = false
-            drawChessboard()
-            drawPieces(null)
+            //drawChessboard()
+            //drawPieces(null)
         }
 
     })
