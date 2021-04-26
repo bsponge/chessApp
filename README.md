@@ -1,1 +1,1 @@
-# szachy
+# chess server app
